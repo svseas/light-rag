@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     upload_path: str = "./uploads"
     allowed_extensions: str = ".pdf,.docx,.txt,.md"
     
+    # Chunking Configuration
+    default_chunk_size: int = 512
+    default_chunk_overlap: int = 50
+    max_chunk_size: int = 4096
+    max_chunk_overlap: int = 200
+    
+    # Entity Extraction Configuration
+    default_confidence_threshold: float = 0.5
+    min_confidence_threshold: float = 0.1
+    max_confidence_threshold: float = 1.0
+    
     # Logging Configuration
     log_level: str = "INFO"
     log_file: str = "./logs/app.log"

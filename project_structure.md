@@ -13,44 +13,51 @@ light-rag/
 ├── project_structure.md          # This file
 ├── docs/
 │   └── system-design.md          # System design documentation
+├── devlog/
+│   └── 20250715_1625_devlog.md   # Development logs
 ├── backend/
 │   ├── __init__.py
 │   ├── api/
 │   │   ├── __init__.py
+│   │   ├── main_routes.py         # ✅ Main API router
 │   │   ├── routes/
 │   │   │   ├── __init__.py
-│   │   │   ├── documents.py     # Document endpoints
+│   │   │   ├── documents.py     # ✅ Document endpoints
+│   │   │   ├── chunks.py        # ✅ Chunk endpoints
+│   │   │   ├── entities.py      # ✅ Entity endpoints
 │   │   │   ├── queries.py       # Query endpoints
-│   │   │   ├── entities.py      # Entity endpoints
-│   │   │   └── health.py        # Health check
+│   │   │   └── health.py        # ✅ Health check
 │   │   └── websockets/
 │   │       ├── __init__.py
 │   │       └── query_stream.py  # WebSocket for streaming
 │   ├── agents/
 │   │   ├── __init__.py
 │   │   ├── document_processor.py # ✅ Document processing agent
-│   │   ├── chunking.py
+│   │   ├── chunking.py          # ✅ Chunking agent
+│   │   ├── entity_extraction.py # ✅ Entity extraction agent
 │   │   ├── summarization.py
-│   │   ├── entity_extraction.py
 │   │   ├── relationship_extraction.py
 │   │   ├── embedding.py
 │   │   ├── query_decomposition.py
 │   │   ├── context_builder.py
 │   │   └── answer_synthesis.py
+│   ├── app.py                   # ✅ FastAPI application factory
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── config.py            # ✅ Configuration with Logfire
 │   │   ├── database.py          # Database connection
-│   │   └── dependencies.py      # FastAPI dependencies
+│   │   └── dependencies.py      # ✅ FastAPI dependencies
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── documents.py         # ✅ Document models
-│   │   ├── chunks.py            # Chunk models
-│   │   ├── entities.py          # Entity/relationship models
+│   │   ├── chunks.py            # ✅ Chunk models
+│   │   ├── entities.py          # ✅ Entity models (52 types)
 │   │   └── queries.py           # Query models
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── document_service.py  # ✅ Document business logic
+│   │   ├── chunking_service.py  # ✅ Chunking business logic
+│   │   ├── entity_extraction_service.py  # ✅ Entity extraction business logic
 │   │   ├── search_service.py    # Search operations
 │   │   └── graph_service.py     # Graph operations
 │   └── utils/
@@ -73,7 +80,8 @@ light-rag/
 │   ├── Dockerfile               # Application Dockerfile
 │   └── docker-compose.yml       # Full stack composition
 ├── migrations/
-│   └── README.md                # Database migrations info
+│   ├── 001_create_tables.sql    # ✅ Database schema creation
+│   └── 002_fix_entity_schema.sql # ✅ Entity schema fixes and graph support
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py              # Pytest configuration
@@ -81,8 +89,8 @@ light-rag/
 │   ├── test_api/                # API tests
 │   └── test_services/           # Service tests
 └── scripts/
-    ├── setup_db.py              # Database setup script
-    └── seed_data.py             # Sample data script
+    ├── setup_db.py              # ✅ Database setup script
+    └── test_document_upload.py  # ✅ Document upload test script
 ```
 
 ## Directory Descriptions
@@ -107,7 +115,10 @@ Lightweight HTMX-based frontend:
 Docker configuration for easy deployment and development.
 
 ### `migrations/`
-Database migration files (using Alembic).
+Database migration files with SQL schema definitions.
+
+### `devlog/`
+Development logs following YYYYMMDD_HHMM_devlog.md convention.
 
 ### `tests/`
 Comprehensive test suite with pytest.
@@ -119,22 +130,27 @@ Utility scripts for setup and maintenance.
 
 ### ✅ Completed
 - **Core Configuration**: Logfire integration, OpenRouter setup
+- **FastAPI Application**: Complete web app with CORS and middleware
+- **Database Schema**: PostgreSQL with pgvector, pgrouting, asyncpg with graph capabilities
 - **Document Models**: Complete Pydantic models with validation
 - **DocumentProcessor Agent**: PydanticAI agent with markitdown integration
-- **Document Service**: Full asyncpg database implementation
+- **Document Service**: Full asyncpg database implementation with async processing
+- **Chunking Agent**: Simple chonkie-based text chunking agent
+- **Chunking Service**: Database operations for chunk management
+- **Entity Extraction Agent**: PydanticAI agent with 52 comprehensive entity types
+- **Entity Extraction Service**: Database operations with orjson optimization
+- **API Endpoints**: Document upload, retrieval, status checking, health check, chunk management, entity extraction
+- **Database Setup**: Migration scripts and setup utilities with graph database support
+- **Testing**: Manual testing with PDF document processing and entity extraction verified
 
 ### 🚧 In Progress
-- Database schema setup
-- API endpoints
-- Frontend implementation
+- **Relationship Extraction Agent**: Next implementation phase
 
 ### ⏳ Pending
-- Chunking agent
-- Entity extraction
 - Relationship extraction
 - Embedding generation
-- Query system
-- Frontend UI
+- Query system (decomposition, context building, answer synthesis)
+- Frontend UI (HTMX templates and components)
 
 ## Notes
 - All Python packages include `__init__.py` files
