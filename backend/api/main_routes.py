@@ -8,12 +8,14 @@ from backend.api.routes.graph import router as graph_router
 from backend.api.routes.embeddings import router as embeddings_router
 from backend.api.routes.auth import router as auth_router
 from backend.api.routes.health import router as health_router
+from backend.api.routes.projects import router as projects_router
 
 # Main API router
 api_router = APIRouter()
 
 # Register route modules
 api_router.include_router(auth_router, tags=["authentication"])
+api_router.include_router(projects_router, tags=["projects"])
 api_router.include_router(documents_router, prefix="/documents", tags=["documents"])
 api_router.include_router(chunks_router, tags=["chunks"])
 api_router.include_router(entities_router, tags=["entities"])

@@ -59,9 +59,14 @@ class Settings(BaseSettings):
     embedding_model: str = "gemini-embedding-001"
     
     # File Upload Configuration
-    max_file_size: int = 10485760  # 10MB
+    max_file_size: int = 5242880  # 5MB for project limits
     upload_path: str = "./uploads"
     allowed_extensions: str = ".pdf,.docx,.txt,.md"
+    
+    # Project Management Configuration
+    max_projects_per_user: int = 1
+    max_documents_per_project: int = 5
+    max_batch_upload_size: int = 5
     
     # Chunking Configuration
     default_chunk_size: int = 512
