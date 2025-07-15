@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     openai_api_key: str
     openai_base_url: str
     
+    # Google Gemini Configuration
+    google_api_key: str
+    
     # Database Configuration
     database_url: str
     postgres_user: str = "postgres"
@@ -38,7 +41,7 @@ class Settings(BaseSettings):
     
     # PydanticAI Configuration
     default_model: str = "anthropic/claude-3.5-sonnet"
-    embedding_model: str = "text-embedding-3-large"
+    embedding_model: str = "gemini-embedding-001"
     
     # File Upload Configuration
     max_file_size: int = 10485760  # 10MB
@@ -60,6 +63,13 @@ class Settings(BaseSettings):
     relationship_confidence_threshold: float = 0.6
     max_relationships_per_extraction: int = 100
     relationship_extraction_timeout: int = 120
+    
+    # Embedding Generation Configuration
+    embedding_batch_size: int = 100
+    embedding_similarity_threshold: float = 0.7
+    embedding_search_limit: int = 50
+    embedding_generation_timeout: int = 30
+    embedding_dimension: int = 768
     
     # Logging Configuration
     log_level: str = "INFO"
