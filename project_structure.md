@@ -25,6 +25,8 @@ light-rag/
 │   │   │   ├── documents.py     # ✅ Document endpoints
 │   │   │   ├── chunks.py        # ✅ Chunk endpoints
 │   │   │   ├── entities.py      # ✅ Entity endpoints
+│   │   │   ├── relationships.py # ✅ Relationship endpoints
+│   │   │   ├── graph.py         # ✅ Graph analytics endpoints
 │   │   │   ├── queries.py       # Query endpoints
 │   │   │   └── health.py        # ✅ Health check
 │   │   └── websockets/
@@ -35,8 +37,8 @@ light-rag/
 │   │   ├── document_processor.py # ✅ Document processing agent
 │   │   ├── chunking.py          # ✅ Chunking agent
 │   │   ├── entity_extraction.py # ✅ Entity extraction agent
+│   │   ├── relationship_extraction.py # ✅ Relationship extraction agent
 │   │   ├── summarization.py
-│   │   ├── relationship_extraction.py
 │   │   ├── embedding.py
 │   │   ├── query_decomposition.py
 │   │   ├── context_builder.py
@@ -45,21 +47,23 @@ light-rag/
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── config.py            # ✅ Configuration with Logfire
-│   │   ├── database.py          # Database connection
+│   │   ├── database.py          # ✅ Database connection
 │   │   └── dependencies.py      # ✅ FastAPI dependencies
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── documents.py         # ✅ Document models
 │   │   ├── chunks.py            # ✅ Chunk models
 │   │   ├── entities.py          # ✅ Entity models (52 types)
+│   │   ├── relationships.py     # ✅ Relationship models (12 types)
 │   │   └── queries.py           # Query models
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── document_service.py  # ✅ Document business logic
 │   │   ├── chunking_service.py  # ✅ Chunking business logic
 │   │   ├── entity_extraction_service.py  # ✅ Entity extraction business logic
-│   │   ├── search_service.py    # Search operations
-│   │   └── graph_service.py     # Graph operations
+│   │   ├── relationship_extraction_service.py  # ✅ Relationship extraction business logic
+│   │   ├── graph_service.py     # ✅ Graph operations
+│   │   └── search_service.py    # Search operations
 │   └── utils/
 │       ├── __init__.py
 │       └── helpers.py           # Utility functions
@@ -139,15 +143,17 @@ Utility scripts for setup and maintenance.
 - **Chunking Service**: Database operations for chunk management
 - **Entity Extraction Agent**: PydanticAI agent with 52 comprehensive entity types
 - **Entity Extraction Service**: Database operations with orjson optimization
-- **API Endpoints**: Document upload, retrieval, status checking, health check, chunk management, entity extraction
+- **Relationship Extraction Agent**: PydanticAI agent with LLM-powered entity matching
+- **Relationship Extraction Service**: Database operations with UUID-based entity resolution
+- **Graph Service**: pgrouting-based pathfinding and graph analytics
+- **API Endpoints**: Document upload, retrieval, status checking, health check, chunk management, entity extraction, relationship extraction, graph analytics
 - **Database Setup**: Migration scripts and setup utilities with graph database support
-- **Testing**: Manual testing with PDF document processing and entity extraction verified
+- **Testing**: Manual testing with PDF document processing, entity extraction, and relationship extraction verified
 
 ### 🚧 In Progress
-- **Relationship Extraction Agent**: Next implementation phase
+- **Embedding Generation Agent**: Next implementation phase
 
 ### ⏳ Pending
-- Relationship extraction
 - Embedding generation
 - Query system (decomposition, context building, answer synthesis)
 - Frontend UI (HTMX templates and components)

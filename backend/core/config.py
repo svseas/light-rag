@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     min_confidence_threshold: float = 0.1
     max_confidence_threshold: float = 1.0
     
+    # Relationship Extraction Configuration
+    relationship_confidence_threshold: float = 0.6
+    max_relationships_per_extraction: int = 100
+    relationship_extraction_timeout: int = 120
+    
     # Logging Configuration
     log_level: str = "INFO"
     log_file: str = "./logs/app.log"
