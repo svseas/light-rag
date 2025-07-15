@@ -210,3 +210,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# upload directories
+uploads/
