@@ -22,6 +22,21 @@ class Settings(BaseSettings):
     # Google Gemini Configuration
     google_api_key: str
     
+    # Firebase Authentication Configuration
+    firebase_api_key: str
+    firebase_auth_domain: str
+    firebase_project_id: str
+    firebase_storage_bucket: str
+    firebase_messaging_sender_id: str
+    firebase_app_id: str
+    firebase_measurement_id: str
+    firebase_private_key_id: str
+    firebase_private_key: str
+    firebase_client_email: str
+    firebase_client_id: str
+    firebase_auth_uri: str
+    firebase_token_uri: str
+    
     # Database Configuration
     database_url: str
     postgres_user: str = "postgres"

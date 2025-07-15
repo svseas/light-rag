@@ -4,6 +4,7 @@ from backend.services.entity_extraction_service import EntityExtractionService
 from backend.services.relationship_extraction_service import RelationshipExtractionService
 from backend.services.graph_service import GraphService
 from backend.services.embedding_generation_service import EmbeddingGenerationService
+from backend.services.auth_service import AuthService
 from backend.agents.chunking import ChunkingAgent
 from backend.agents.entity_extraction import EntityExtractionAgent
 
@@ -38,3 +39,9 @@ async def get_embedding_service() -> EmbeddingGenerationService:
     """Get embedding generation service dependency."""
     db_pool = await get_db_pool()
     return EmbeddingGenerationService(db_pool)
+
+
+async def get_auth_service() -> AuthService:
+    """Get authentication service dependency."""
+    db_pool = await get_db_pool()
+    return AuthService(db_pool)
