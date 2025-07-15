@@ -27,6 +27,7 @@ light-rag/
 │   │   │   ├── entities.py      # ✅ Entity endpoints
 │   │   │   ├── relationships.py # ✅ Relationship endpoints
 │   │   │   ├── graph.py         # ✅ Graph analytics endpoints
+│   │   │   ├── embeddings.py    # ✅ Embedding generation endpoints
 │   │   │   ├── queries.py       # Query endpoints
 │   │   │   └── health.py        # ✅ Health check
 │   │   └── websockets/
@@ -38,8 +39,8 @@ light-rag/
 │   │   ├── chunking.py          # ✅ Chunking agent
 │   │   ├── entity_extraction.py # ✅ Entity extraction agent
 │   │   ├── relationship_extraction.py # ✅ Relationship extraction agent
+│   │   ├── embedding_generation.py # ✅ Embedding generation agent
 │   │   ├── summarization.py
-│   │   ├── embedding.py
 │   │   ├── query_decomposition.py
 │   │   ├── context_builder.py
 │   │   └── answer_synthesis.py
@@ -55,6 +56,7 @@ light-rag/
 │   │   ├── chunks.py            # ✅ Chunk models
 │   │   ├── entities.py          # ✅ Entity models (52 types)
 │   │   ├── relationships.py     # ✅ Relationship models (12 types)
+│   │   ├── embeddings.py        # ✅ Embedding models
 │   │   └── queries.py           # Query models
 │   ├── services/
 │   │   ├── __init__.py
@@ -62,6 +64,7 @@ light-rag/
 │   │   ├── chunking_service.py  # ✅ Chunking business logic
 │   │   ├── entity_extraction_service.py  # ✅ Entity extraction business logic
 │   │   ├── relationship_extraction_service.py  # ✅ Relationship extraction business logic
+│   │   ├── embedding_generation_service.py  # ✅ Embedding generation business logic
 │   │   ├── graph_service.py     # ✅ Graph operations
 │   │   └── search_service.py    # Search operations
 │   └── utils/
@@ -133,9 +136,9 @@ Utility scripts for setup and maintenance.
 ## Implementation Status
 
 ### ✅ Completed
-- **Core Configuration**: Logfire integration, OpenRouter setup
+- **Core Configuration**: Logfire integration, OpenRouter setup, Google Gemini API integration
 - **FastAPI Application**: Complete web app with CORS and middleware
-- **Database Schema**: PostgreSQL with pgvector, pgrouting, asyncpg with graph capabilities
+- **Database Schema**: PostgreSQL with pgvector, pgrouting, asyncpg with graph capabilities (3072-dimensional embeddings)
 - **Document Models**: Complete Pydantic models with validation
 - **DocumentProcessor Agent**: PydanticAI agent with markitdown integration
 - **Document Service**: Full asyncpg database implementation with async processing
@@ -145,16 +148,14 @@ Utility scripts for setup and maintenance.
 - **Entity Extraction Service**: Database operations with orjson optimization
 - **Relationship Extraction Agent**: PydanticAI agent with LLM-powered entity matching
 - **Relationship Extraction Service**: Database operations with UUID-based entity resolution
+- **Embedding Generation Agent**: Google Gemini API integration with 3072-dimensional embeddings
+- **Embedding Generation Service**: Database operations with batch processing and similarity search
 - **Graph Service**: pgrouting-based pathfinding and graph analytics
-- **API Endpoints**: Document upload, retrieval, status checking, health check, chunk management, entity extraction, relationship extraction, graph analytics
+- **API Endpoints**: Document upload, retrieval, status checking, health check, chunk management, entity extraction, relationship extraction, graph analytics, embedding generation, similarity search, semantic search
 - **Database Setup**: Migration scripts and setup utilities with graph database support
-- **Testing**: Manual testing with PDF document processing, entity extraction, and relationship extraction verified
-
-### 🚧 In Progress
-- **Embedding Generation Agent**: Next implementation phase
+- **Testing**: Manual testing with PDF document processing, entity extraction, relationship extraction, and embedding generation verified
 
 ### ⏳ Pending
-- Embedding generation
 - Query system (decomposition, context building, answer synthesis)
 - Frontend UI (HTMX templates and components)
 
