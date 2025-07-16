@@ -106,6 +106,15 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def setup_pydantic_ai_environment() -> None:
+    """Set up environment variables for PydanticAI."""
+    settings = get_settings()
+    
+    # Set OpenAI environment variables for PydanticAI
+    os.environ["OPENAI_API_KEY"] = settings.openai_api_key
+    os.environ["OPENAI_BASE_URL"] = settings.openai_base_url
+
+
 def configure_logfire() -> None:
     """Configure Logfire for observability."""
     settings = get_settings()

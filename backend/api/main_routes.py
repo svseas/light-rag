@@ -10,6 +10,7 @@ from backend.api.routes.auth import router as auth_router
 from backend.api.routes.health import router as health_router
 from backend.api.routes.projects import router as projects_router
 from backend.api.routes.pipeline import router as pipeline_router
+from backend.api.routes.queries import router as queries_router
 
 # Main API router
 api_router = APIRouter()
@@ -23,6 +24,7 @@ api_router.include_router(entities_router, tags=["entities"])
 api_router.include_router(relationships_router, tags=["relationships"])
 api_router.include_router(graph_router, tags=["graph"])
 api_router.include_router(embeddings_router, tags=["embeddings"])
+api_router.include_router(queries_router, tags=["queries"])
 api_router.include_router(pipeline_router, tags=["pipeline"])
 api_router.include_router(health_router, tags=["health"])
 
