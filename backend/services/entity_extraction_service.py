@@ -245,6 +245,68 @@ class EntityExtractionService:
             
             return self._create_entity_response(row)
     
+    async def get_entities_by_project(self, project_id: UUID, page: int = 1, per_page: int = 100) -> EntityList:
+        """Get all entities for a project (for knowledge graph visualization)."""
+        offset = (page - 1) * per_page
+        
+        async with self.db_pool.acquire() as conn:
+            total_row = await conn.fetchrow(
+                """
+                SELECT COUNT(*) as total 
+                FROM entities e
+                JOIN documents d ON e.doc_id = d.id
+                WHERE d.project_id = $1
+                """,
+                project_id
+            )
+            
+            rows = await conn.fetch(
+                """
+                SELECT e.id, e.chunk_id, e.entity_type, e.entity_name, e.confidence, e.metadata, e.created_at
+                FROM entities e
+                JOIN documents d ON e.doc_id = d.id
+                WHERE d.project_id = $1
+                ORDER BY e.confidence DESC, e.entity_name
+                LIMIT $2 OFFSET $3
+                """,
+                project_id, per_page, offset
+            )
+            
+            total = total_row['total']
+            entities = [self._create_entity_response(row) for row in rows]
+            
+            return EntityList(
+                entities=entities,
+                total=total,
+                page=page,
+                per_page=per_page,
+                has_next=offset + per_page < total
+            )
+
+    async def extract_entities_for_document(self, document_id: UUID) -> None:
+        """Extract entities for all chunks in a document."""
+        async with self.db_pool.acquire() as conn:
+            # Get all chunks for the document
+            chunks = await conn.fetch(
+                "SELECT id, content FROM chunks WHERE doc_id = $1 ORDER BY chunk_index",
+                document_id
+            )
+            
+            for chunk in chunks:
+                chunk_id = chunk['id']
+                content = chunk['content']
+                
+                if content and content.strip():
+                    # Create extraction request
+                    from backend.models.entities import EntityExtractionRequest
+                    request = EntityExtractionRequest(
+                        chunk_id=chunk_id,
+                        enable_llm_extraction=True
+                    )
+                    
+                    # Extract entities for this chunk
+                    await self.extract_entities_for_chunk(chunk_id, content, request)
+
     async def delete_entity(self, entity_id: UUID) -> bool:
         """Delete an entity by ID."""
         async with self.db_pool.acquire() as conn:

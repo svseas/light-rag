@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 import asyncpg
+import logfire
 
 from backend.agents.embedding_generation import EmbeddingGenerationAgent
 from backend.models.embeddings import (
@@ -310,6 +311,33 @@ class EmbeddingGenerationService:
             error_message=error
         )
     
+    async def generate_embeddings_for_document(self, document_id: UUID) -> None:
+        """Generate embeddings for all chunks in a document."""
+        async with self.db_pool.acquire() as conn:
+            # Get all chunks for the document
+            chunks = await conn.fetch(
+                "SELECT id FROM chunks WHERE doc_id = $1 ORDER BY chunk_index",
+                document_id
+            )
+            
+            logfire.info(f"Generating embeddings for {len(chunks)} chunks in document {document_id}")
+            
+            for chunk in chunks:
+                chunk_id = chunk['id']
+                
+                # Check if embedding already exists
+                if await self._has_embedding(conn, EmbeddingType.CHUNK, chunk_id):
+                    continue
+                
+                # Generate embedding for this chunk
+                from backend.models.embeddings import EmbeddingGenerationRequest
+                request = EmbeddingGenerationRequest(
+                    content_type=EmbeddingType.CHUNK,
+                    content_id=chunk_id
+                )
+                
+                await self.generate_embedding(request)
+
     def _create_similarity_result(self, content_type: EmbeddingType, row: dict) -> SimilarityResult:
         """Create similarity result."""
         content = row['content']

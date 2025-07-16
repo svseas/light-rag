@@ -6,7 +6,7 @@
     <title>{% block title %}LightRAG{% endblock %}</title>
     
     <!-- CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+    <link rel="stylesheet" href="/static/css/main.css">
     {% block extra_css %}{% endblock %}
     
     <!-- HTMX -->
@@ -37,8 +37,8 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- JavaScript -->
-    <script src="{{ url_for('static', path='/js/auth.js') }}?v=6"></script>
-    <script src="{{ url_for('static', path='/js/app.js') }}?v=6"></script>
+    <script src="/static/js/auth.js?v=6"></script>
+    <script src="/static/js/app.js?v=6"></script>
     {% block extra_js %}{% endblock %}
     
     <!-- HTMX Configuration -->

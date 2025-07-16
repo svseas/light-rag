@@ -24,6 +24,11 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
     
+    # Mount static files FIRST (before any routers)
+    from pathlib import Path
+    static_path = Path(__file__).parent.parent / "frontend" / "static"
+    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+    
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
@@ -35,9 +40,6 @@ def create_app() -> FastAPI:
     
     # Instrument FastAPI with logfire
     logfire.instrument_fastapi(app)
-    
-    # Mount static files
-    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
     
     # Include API routes
     app.include_router(api_router, prefix="/api")

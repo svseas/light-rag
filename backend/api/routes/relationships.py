@@ -3,7 +3,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-from backend.core.dependencies import get_relationship_service
+from backend.api.routes.auth import get_current_user
+from backend.core.dependencies import get_relationship_service, get_project_service
+from backend.models.auth import User
 from backend.models.relationships import (
     RelationshipExtractionRequest,
     RelationshipExtractionResult,
@@ -11,6 +13,7 @@ from backend.models.relationships import (
     RelationshipResponse,
 )
 from backend.services.relationship_extraction_service import RelationshipExtractionService
+from backend.services.project_service import ProjectService
 
 router = APIRouter(prefix="/relationships", tags=["relationships"])
 
@@ -71,6 +74,28 @@ async def get_relationship(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get relationship: {str(e)}")
+
+
+@router.get("/project/{project_id}", response_model=RelationshipList)
+async def get_relationships_by_project(
+    project_id: UUID,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(100, ge=1, le=1000),
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
+    service: RelationshipExtractionService = Depends(get_relationship_service),
+) -> RelationshipList:
+    """Get all relationships for a project (for knowledge graph visualization)."""
+    # Verify user owns the project
+    user_project = await project_service.get_user_project(current_user.uid)
+    if not user_project or user_project.id != project_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied to project"
+        )
+    
+    # Get relationships for the project
+    return await service.get_relationships_by_project(project_id, page, per_page)
 
 
 @router.delete("/{relationship_id}")

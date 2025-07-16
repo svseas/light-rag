@@ -57,10 +57,18 @@ class RelationshipUpdate(BaseModel):
     metadata: dict | None = Field(None, description="Updated metadata")
 
 
+class EntitySummary(BaseModel):
+    id: UUID = Field(..., description="Entity ID")
+    entity_name: str = Field(..., description="Entity name")
+    entity_type: str = Field(..., description="Entity type")
+
+
 class RelationshipResponse(RelationshipBase):
     id: UUID = Field(..., description="The unique identifier of the relationship")
     doc_id: UUID = Field(..., description="The ID of the document where relationship was found")
     created_at: datetime = Field(..., description="Timestamp when the relationship was created")
+    source_entity: EntitySummary | None = Field(None, description="Source entity details")
+    target_entity: EntitySummary | None = Field(None, description="Target entity details")
 
     class Config:
         from_attributes = True

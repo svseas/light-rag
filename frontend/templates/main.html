@@ -5,599 +5,7 @@
 {% block body_class %}main-app{% endblock %}
 
 {% block extra_css %}
-<style>
-/* Main app layout styles */
-.app-container {
-    display: grid;
-    grid-template-rows: 60px 1fr;
-    height: 100vh;
-    background-color: var(--bg-primary);
-}
-
-/* Header styles */
-.app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 var(--space-6);
-    background-color: var(--bg-primary);
-    border-bottom: 1px solid var(--border-light);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.app-logo {
-    font-size: var(--text-xl);
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-.status-indicator {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: var(--radius-full);
-    background-color: var(--success-color);
-}
-
-.status-dot.processing {
-    background-color: var(--warning-color);
-    animation: pulse 2s infinite;
-}
-
-.status-dot.idle {
-    background-color: var(--text-muted);
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.user-profile {
-    position: relative;
-}
-
-.profile-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.profile-button {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.profile-button:hover {
-    background-color: var(--bg-hover);
-}
-
-.profile-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-full);
-    background-color: var(--accent-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-inverse);
-    font-size: var(--text-sm);
-    font-weight: 600;
-}
-
-.dropdown-content {
-    position: absolute;
-    right: 0;
-    top: 100%;
-    margin-top: var(--space-2);
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: var(--space-2);
-    min-width: 200px;
-    z-index: 1000;
-    display: none;
-}
-
-.dropdown-content.active {
-    display: block;
-}
-
-.dropdown-item {
-    display: block;
-    padding: var(--space-2) var(--space-3);
-    color: var(--text-primary);
-    text-decoration: none;
-    border-radius: var(--radius-md);
-    transition: background-color var(--transition-fast);
-}
-
-.dropdown-item:hover {
-    background-color: var(--bg-hover);
-}
-
-/* Main content area */
-.app-main {
-    display: grid;
-    grid-template-columns: 35% 65%;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    overflow: hidden;
-}
-
-/* Left column - Document management */
-.left-column {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    overflow: hidden;
-}
-
-.upload-section {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-sm);
-}
-
-.upload-button {
-    width: 100%;
-    padding: var(--space-4);
-    background-color: var(--accent-color);
-    color: var(--text-inverse);
-    border: none;
-    border-radius: var(--radius-lg);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    margin-bottom: var(--space-4);
-}
-
-.upload-button:hover {
-    background-color: var(--accent-hover);
-    transform: translateY(-1px);
-}
-
-.drop-zone {
-    border: 2px dashed var(--border-medium);
-    border-radius: var(--radius-lg);
-    padding: var(--space-8);
-    text-align: center;
-    color: var(--text-muted);
-    transition: all var(--transition-fast);
-}
-
-.drop-zone.dragover {
-    border-color: var(--accent-color);
-    background-color: var(--bg-secondary);
-}
-
-.drop-zone-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-}
-
-.drop-zone-icon {
-    font-size: var(--text-3xl);
-    opacity: 0.5;
-}
-
-.documents-section {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-sm);
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-4);
-    padding-bottom: var(--space-3);
-    border-bottom: 1px solid var(--border-light);
-}
-
-.section-title {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.documents-list {
-    flex: 1;
-    overflow-y: auto;
-    margin: 0 -var(--space-6);
-    padding: 0 var(--space-6);
-}
-
-.document-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    border-radius: var(--radius-lg);
-    transition: background-color var(--transition-fast);
-    margin-bottom: var(--space-2);
-}
-
-.document-item:hover {
-    background-color: var(--bg-hover);
-}
-
-.document-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
-    background-color: var(--bg-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    font-size: var(--text-lg);
-}
-
-.document-info {
-    flex: 1;
-}
-
-.document-title {
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-bottom: var(--space-1);
-}
-
-.document-meta {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-}
-
-.document-actions {
-    display: flex;
-    gap: var(--space-2);
-}
-
-.action-btn {
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    background-color: var(--bg-primary);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.action-btn:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.entity-viewer {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-sm);
-}
-
-.tabs {
-    display: flex;
-    gap: var(--space-2);
-    margin-bottom: var(--space-4);
-    border-bottom: 1px solid var(--border-light);
-}
-
-.tab {
-    padding: var(--space-2) var(--space-4);
-    border: none;
-    background-color: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all var(--transition-fast);
-    font-size: var(--text-sm);
-}
-
-.tab.active {
-    color: var(--accent-color);
-    border-bottom-color: var(--accent-color);
-}
-
-.tab:hover {
-    color: var(--text-primary);
-}
-
-.tab-content {
-    height: 200px;
-    overflow-y: auto;
-}
-
-/* Right column - Chat interface */
-.right-column {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    overflow: hidden;
-}
-
-.chat-section {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-sm);
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat-window {
-    flex: 1;
-    overflow-y: auto;
-    margin: 0 -var(--space-6);
-    padding: 0 var(--space-6);
-    margin-bottom: var(--space-4);
-}
-
-.chat-input-area {
-    display: flex;
-    gap: var(--space-3);
-    align-items: flex-end;
-}
-
-.chat-input {
-    flex: 1;
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    font-size: var(--text-base);
-    resize: none;
-    min-height: 44px;
-    max-height: 120px;
-}
-
-.chat-controls {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-}
-
-.rag-toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-}
-
-.rag-toggle input[type="checkbox"] {
-    width: auto;
-    margin: 0;
-}
-
-.send-button {
-    width: 44px;
-    height: 44px;
-    background-color: var(--accent-color);
-    color: var(--text-inverse);
-    border: none;
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.send-button:hover {
-    background-color: var(--accent-hover);
-}
-
-.send-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.thinking-panel {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-sm);
-    height: 300px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.thinking-content {
-    flex: 1;
-    overflow-y: auto;
-    margin: 0 -var(--space-6);
-    padding: 0 var(--space-6);
-}
-
-.context-item {
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
-    background-color: var(--bg-secondary);
-    margin-bottom: var(--space-2);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-}
-
-.entity-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    transition: background-color var(--transition-fast);
-    margin-bottom: var(--space-1);
-}
-
-.entity-item:hover {
-    background-color: var(--bg-hover);
-}
-
-.entity-name {
-    font-weight: 500;
-    color: var(--text-primary);
-}
-
-.entity-type {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    background-color: var(--bg-tertiary);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .app-main {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-    }
-    
-    .app-header {
-        padding: 0 var(--space-4);
-    }
-    
-    .app-logo {
-        font-size: var(--text-lg);
-    }
-    
-    .left-column {
-        order: 2;
-        height: auto;
-    }
-    
-    .right-column {
-        order: 1;
-        height: 60vh;
-    }
-    
-    .documents-section {
-        height: 300px;
-    }
-    
-    .thinking-panel {
-        height: 200px;
-    }
-}
-
-@media (max-width: 480px) {
-    .app-main {
-        padding: var(--space-2);
-        gap: var(--space-2);
-    }
-    
-    .upload-section,
-    .documents-section,
-    .entity-viewer,
-    .chat-section,
-    .thinking-panel {
-        padding: var(--space-4);
-    }
-    
-    .chat-input-area {
-        flex-direction: column;
-        gap: var(--space-2);
-    }
-    
-    .chat-controls {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-}
-
-/* Animation keyframes */
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-/* File upload progress */
-.upload-progress {
-    margin-top: var(--space-4);
-    padding: var(--space-3);
-    background-color: var(--bg-secondary);
-    border-radius: var(--radius-md);
-}
-
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background-color: var(--bg-tertiary);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin-top: var(--space-2);
-}
-
-.progress-fill {
-    height: 100%;
-    background-color: var(--accent-color);
-    transition: width var(--transition-normal);
-}
-
-/* Empty states */
-.empty-state {
-    text-align: center;
-    padding: var(--space-8);
-    color: var(--text-muted);
-}
-
-.empty-state-icon {
-    font-size: var(--text-3xl);
-    margin-bottom: var(--space-4);
-    opacity: 0.5;
-}
-
-.empty-state-text {
-    font-size: var(--text-sm);
-    line-height: var(--leading-relaxed);
-}
-</style>
+<link rel="stylesheet" href="/static/css/main.css">
 {% endblock %}
 
 {% block content %}
@@ -688,13 +96,13 @@
                             <div class="empty-state-text">No entities extracted yet.</div>
                         </div>
                     </div>
-                    <div class="tab-pane" id="graphTab" style="display: none;">
+                    <div class="tab-pane" id="graphTab">
                         <div class="empty-state">
                             <div class="empty-state-icon">🕸️</div>
                             <div class="empty-state-text">Knowledge graph will appear here.</div>
                         </div>
                     </div>
-                    <div class="tab-pane" id="relationshipsTab" style="display: none;">
+                    <div class="tab-pane" id="relationshipsTab">
                         <div class="empty-state">
                             <div class="empty-state-icon">🔗</div>
                             <div class="empty-state-text">No relationships found yet.</div>
@@ -758,13 +166,13 @@
                             <div class="empty-state-text">Retrieved context will appear here when you ask a question.</div>
                         </div>
                     </div>
-                    <div class="tab-pane" id="entitiesMatchTab" style="display: none;">
+                    <div class="tab-pane" id="entitiesMatchTab">
                         <div class="empty-state">
                             <div class="empty-state-icon">🎯</div>
                             <div class="empty-state-text">Matched entities will appear here.</div>
                         </div>
                     </div>
-                    <div class="tab-pane" id="reasoningTab" style="display: none;">
+                    <div class="tab-pane" id="reasoningTab">
                         <div class="empty-state">
                             <div class="empty-state-icon">🤔</div>
                             <div class="empty-state-text">Reasoning trace will appear here.</div>
@@ -828,8 +236,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize chat
         initializeChat();
         
-        // Initialize tabs
-        initializeTabs();
+        // Initialize tabs (with delay to ensure DOM is ready)
+        setTimeout(() => {
+            initializeTabs();
+        }, 100);
         
         console.log('Main app initialized');
     }
@@ -927,15 +337,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const html = documents.map(doc => `
-            <div class="document-item" data-id="${doc.id}">
+            <div class="document-item" data-id="${doc.id}" onclick="selectDocument('${doc.id}')">
                 <div class="document-icon">📄</div>
                 <div class="document-info">
                     <div class="document-title">${Utils.escapeHtml(doc.name || doc.title || 'Untitled')}</div>
                     <div class="document-meta">${doc.original_format || ''} • ${Utils.formatDate(doc.created_at)}</div>
                 </div>
                 <div class="document-actions">
-                    <button class="action-btn" onclick="previewDocument('${doc.id}')" title="Preview">👁️</button>
-                    <button class="action-btn" onclick="deleteDocument('${doc.id}')" title="Delete">🗑️</button>
+                    <button class="action-btn" onclick="event.stopPropagation(); previewDocument('${doc.id}')" title="Preview">👁️</button>
+                    <button class="action-btn" onclick="event.stopPropagation(); deleteDocument('${doc.id}')" title="Delete">🗑️</button>
                 </div>
             </div>
         `).join('');
@@ -1090,6 +500,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 console.log('File uploaded successfully:', result);
                 showToast(`${file.name} uploaded successfully`, 'success');
+                
+                // Auto-trigger pipeline processing
+                if (result.document_id) {
+                    setTimeout(() => {
+                        triggerPipelineProcessing(result.document_id, file.name);
+                    }, 1000);
+                }
             } else {
                 const errorText = await response.text();
                 console.error('Upload failed:', response.status, errorText);
@@ -1221,8 +638,25 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 const tabGroup = this.closest('.tabs');
-                const contentContainer = tabGroup.parentElement.nextElementSibling;
+                if (!tabGroup) {
+                    console.error('Tab group not found for tab:', this);
+                    return;
+                }
+                
                 const tabName = this.dataset.tab;
+                if (!tabName) {
+                    console.error('Tab name not found for tab:', this);
+                    return;
+                }
+                
+                // Find the content container - it's the next sibling of the tabs div
+                const contentContainer = tabGroup.nextElementSibling;
+                if (!contentContainer) {
+                    console.error('Content container not found for tab group:', tabGroup);
+                    return;
+                }
+                
+                console.log('Tab clicked:', tabName, 'Content container:', contentContainer);
                 
                 // Update active tab
                 tabGroup.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1230,14 +664,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update active content
                 contentContainer.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.style.display = 'none';
                     pane.classList.remove('active');
                 });
                 
                 const targetPane = document.getElementById(tabName + 'Tab');
                 if (targetPane) {
-                    targetPane.style.display = 'block';
                     targetPane.classList.add('active');
+                    console.log('Activated tab pane:', targetPane.id);
+                } else {
+                    console.error('Target pane not found:', tabName + 'Tab');
                 }
             });
         });
@@ -1251,11 +686,276 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function loadEntities() {
-        // Placeholder for entity loading
-        showToast('Entity loading not implemented yet', 'info');
+        if (!appState.selectedDocument) {
+            showEntityEmptyState();
+            return;
+        }
+        
+        try {
+            const project = appState.project;
+            if (!project) {
+                showToast('No project available', 'error');
+                return;
+            }
+            
+            // Load entities for the selected document
+            const entitiesResponse = await API.get(`/entities/documents/${appState.selectedDocument.id}/entities?per_page=100`);
+            const entities = entitiesResponse.entities || [];
+            
+            renderEntities(entities);
+            
+            // Also load relationships
+            await loadRelationships();
+            
+            // Update graph tab with statistics
+            updateGraphTab(entities);
+            
+        } catch (error) {
+            console.error('Failed to load entities:', error);
+            showToast('Failed to load entities', 'error');
+            showEntityEmptyState();
+        }
+    }
+    
+    async function loadRelationships() {
+        if (!appState.selectedDocument) {
+            showRelationshipEmptyState();
+            return;
+        }
+        
+        try {
+            const project = appState.project;
+            if (!project) {
+                return;
+            }
+            
+            // Load relationships for the selected document
+            const relationshipsResponse = await API.get(`/relationships/documents/${appState.selectedDocument.id}?per_page=100`);
+            const relationships = relationshipsResponse.relationships || [];
+            
+            renderRelationships(relationships);
+            
+        } catch (error) {
+            console.error('Failed to load relationships:', error);
+            showToast('Failed to load relationships', 'error');
+            showRelationshipEmptyState();
+        }
+    }
+    
+    function renderEntities(entities) {
+        const entitiesTab = document.getElementById('entitiesTab');
+        
+        if (entities.length === 0) {
+            showEntityEmptyState();
+            return;
+        }
+        
+        const html = entities.map(entity => `
+            <div class="entity-item">
+                <div class="entity-info">
+                    <div class="entity-name">${Utils.escapeHtml(entity.entity_name)}</div>
+                    <div class="entity-type">${entity.entity_type}</div>
+                </div>
+                <div class="entity-confidence">${(entity.confidence * 100).toFixed(0)}%</div>
+            </div>
+        `).join('');
+        
+        entitiesTab.innerHTML = html;
+    }
+    
+    function renderRelationships(relationships) {
+        const relationshipsTab = document.getElementById('relationshipsTab');
+        
+        if (relationships.length === 0) {
+            showRelationshipEmptyState();
+            return;
+        }
+        
+        const html = relationships.map(rel => `
+            <div class="relationship-item">
+                <div class="relationship-info">
+                    <div class="relationship-source">${Utils.escapeHtml(rel.source_entity?.entity_name || 'Unknown')}</div>
+                    <div class="relationship-type">${rel.relationship_type}</div>
+                    <div class="relationship-target">${Utils.escapeHtml(rel.target_entity?.entity_name || 'Unknown')}</div>
+                </div>
+                <div class="relationship-confidence">${(rel.confidence * 100).toFixed(0)}%</div>
+            </div>
+        `).join('');
+        
+        relationshipsTab.innerHTML = html;
+    }
+    
+    function showEntityEmptyState() {
+        const entitiesTab = document.getElementById('entitiesTab');
+        entitiesTab.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🔍</div>
+                <div class="empty-state-text">No entities found for this document.</div>
+            </div>
+        `;
+    }
+    
+    function showRelationshipEmptyState() {
+        const relationshipsTab = document.getElementById('relationshipsTab');
+        relationshipsTab.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🔗</div>
+                <div class="empty-state-text">No relationships found for this document.</div>
+            </div>
+        `;
+    }
+    
+    function updateGraphTab(entities) {
+        const graphTab = document.getElementById('graphTab');
+        
+        if (!entities || entities.length === 0) {
+            graphTab.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🕸️</div>
+                    <div class="empty-state-text">No entities available for graph visualization.</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Count entities by type
+        const entityTypeCounts = {};
+        entities.forEach(entity => {
+            const type = entity.entity_type;
+            entityTypeCounts[type] = (entityTypeCounts[type] || 0) + 1;
+        });
+        
+        const sortedTypes = Object.entries(entityTypeCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10); // Top 10 types
+        
+        const html = `
+            <div class="graph-stats">
+                <h4>Knowledge Graph Statistics</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${entities.length}</div>
+                        <div class="stat-label">Total Entities</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${Object.keys(entityTypeCounts).length}</div>
+                        <div class="stat-label">Entity Types</div>
+                    </div>
+                </div>
+                
+                <h5>Top Entity Types</h5>
+                <div class="entity-types-list">
+                    ${sortedTypes.map(([type, count]) => `
+                        <div class="entity-type-item">
+                            <span class="entity-type-name">${type}</span>
+                            <span class="entity-type-count">${count}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        graphTab.innerHTML = html;
+    }
+    
+    async function triggerPipelineProcessing(documentId, fileName) {
+        try {
+            console.log(`Starting pipeline processing for document: ${fileName}`);
+            setStatus('Processing document...', 'processing');
+            
+            // Start pipeline processing
+            const pipelineResponse = await API.post(`/pipeline/documents/${documentId}/process`);
+            console.log('Pipeline started:', pipelineResponse);
+            
+            showToast(`Processing ${fileName}... (${pipelineResponse.execution_id.substring(0, 8)})`, 'info');
+            
+            // Monitor pipeline progress
+            monitorPipelineProgress(pipelineResponse.execution_id, fileName);
+            
+        } catch (error) {
+            console.error('Failed to start pipeline:', error);
+            showToast(`Failed to process ${fileName}: ${error.message}`, 'error');
+            setStatus('Ready', 'idle');
+        }
+    }
+    
+    async function monitorPipelineProgress(executionId, fileName) {
+        const maxAttempts = 30;
+        let attempts = 0;
+        
+        const checkProgress = async () => {
+            try {
+                const status = await API.get(`/pipeline/${executionId}/status`);
+                console.log(`Pipeline progress for ${fileName}:`, status.status, status.current_stage);
+                
+                if (status.status === 'completed') {
+                    setStatus('Ready', 'idle');
+                    showToast(`✅ ${fileName} processed successfully! Knowledge graph updated.`, 'success');
+                    
+                    // Refresh documents and knowledge graph if this document is selected
+                    await loadDocuments();
+                    if (appState.selectedDocument && appState.selectedDocument.id === status.document_id) {
+                        await loadEntities();
+                    }
+                    return;
+                }
+                
+                if (status.status === 'failed') {
+                    setStatus('Ready', 'idle');
+                    showToast(`❌ Failed to process ${fileName}`, 'error');
+                    return;
+                }
+                
+                // Still running, check again
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(checkProgress, 2000);
+                } else {
+                    setStatus('Ready', 'idle');
+                    showToast(`⏱️ Processing ${fileName} is taking longer than expected`, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error checking pipeline progress:', error);
+                setStatus('Ready', 'idle');
+            }
+        };
+        
+        // Start monitoring
+        setTimeout(checkProgress, 2000);
     }
     
     // Global functions for document actions
+    window.selectDocument = function(docId) {
+        // Update selected document in state
+        const selectedDoc = appState.documents.find(doc => doc.id === docId);
+        appState.setState({ selectedDocument: selectedDoc });
+        
+        // Update UI to show selected document
+        const documentItems = document.querySelectorAll('.document-item');
+        if (documentItems) {
+            documentItems.forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+        
+        const selectedItem = document.querySelector(`[data-id="${docId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('selected');
+        }
+        
+        // Update knowledge graph section title
+        const sectionTitle = document.querySelector('.entity-viewer .section-title');
+        if (sectionTitle && selectedDoc) {
+            sectionTitle.textContent = `Knowledge Graph - ${selectedDoc.name}`;
+        }
+        
+        // Load knowledge graph data for selected document
+        loadEntities();
+        
+        console.log('Selected document:', selectedDoc);
+    };
+    
     window.previewDocument = function(docId) {
         showToast('Document preview not implemented yet', 'info');
     };
@@ -1266,6 +966,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             await API.delete(`/documents/${docId}`);
             showToast('Document deleted successfully', 'success');
+            
+            // Clear selection if deleted document was selected
+            if (appState.selectedDocument && appState.selectedDocument.id === docId) {
+                appState.setState({ selectedDocument: null });
+                document.querySelector('.entity-viewer .section-title').textContent = 'Knowledge Graph';
+                showEntityEmptyState();
+                showRelationshipEmptyState();
+            }
+            
             await loadDocuments();
         } catch (error) {
             console.error('Delete failed:', error);
@@ -1274,34 +983,4 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
-
-<style>
-/* Chat message styles */
-.chat-message {
-    margin-bottom: var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-lg);
-    max-width: 80%;
-}
-
-.chat-message.user {
-    background-color: var(--accent-color);
-    color: var(--text-inverse);
-    margin-left: auto;
-}
-
-.chat-message.bot {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.message-content {
-    margin-bottom: var(--space-1);
-}
-
-.message-time {
-    font-size: var(--text-xs);
-    opacity: 0.7;
-}
-</style>
 {% endblock %}

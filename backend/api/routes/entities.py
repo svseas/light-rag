@@ -1,10 +1,13 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
+from backend.api.routes.auth import get_current_user
+from backend.models.auth import User
 from backend.models.entities import (
     EntityResponse, EntityList, EntityExtractionRequest, EntityExtractionStatus, EntityType
 )
 from backend.services.entity_extraction_service import EntityExtractionService
-from backend.core.dependencies import get_entity_extraction_service
+from backend.services.project_service import ProjectService
+from backend.core.dependencies import get_entity_extraction_service, get_project_service
 
 router = APIRouter(prefix="/entities", tags=["entities"])
 
@@ -82,3 +85,25 @@ async def delete_entity(
     if not success:
         raise HTTPException(status_code=404, detail="Entity not found")
     return {"message": "Entity deleted successfully"}
+
+
+@router.get("/project/{project_id}", response_model=EntityList)
+async def get_entities_by_project(
+    project_id: UUID,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(100, ge=1, le=1000),
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
+    service: EntityExtractionService = Depends(get_entity_extraction_service)
+):
+    """Get all entities for a project (for knowledge graph visualization)."""
+    # Verify user owns the project
+    user_project = await project_service.get_user_project(current_user.uid)
+    if not user_project or user_project.id != project_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied to project"
+        )
+    
+    # Get entities for the project
+    return await service.get_entities_by_project(project_id, page, per_page)

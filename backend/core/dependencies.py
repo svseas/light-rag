@@ -6,6 +6,7 @@ from backend.services.graph_service import GraphService
 from backend.services.embedding_generation_service import EmbeddingGenerationService
 from backend.services.auth_service import AuthService
 from backend.services.project_service import ProjectService
+from backend.services.pipeline_service import PipelineService
 from backend.agents.chunking import ChunkingAgent
 from backend.agents.entity_extraction import EntityExtractionAgent
 
@@ -52,3 +53,9 @@ async def get_project_service() -> ProjectService:
     """Get project service dependency."""
     db_pool = await get_db_pool()
     return ProjectService(db_pool)
+
+
+async def get_pipeline_service() -> PipelineService:
+    """Get pipeline service dependency."""
+    db_pool = await get_db_pool()
+    return PipelineService(db_pool)

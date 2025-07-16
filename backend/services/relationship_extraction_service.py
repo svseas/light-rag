@@ -4,6 +4,7 @@ import logging
 
 import asyncpg
 import orjson
+import logfire
 
 from backend.agents.relationship_extraction import RelationshipExtractionAgent
 from backend.models.relationships import (
@@ -53,9 +54,38 @@ class RelationshipExtractionService:
         self, doc_id: UUID, page: int = 1, per_page: int = 50
     ) -> RelationshipList:
         """Get relationships for a document with pagination."""
+        offset = (page - 1) * per_page
+        
         async with self.db_pool.acquire() as conn:
-            return await self._get_relationships_paginated(
-                conn, "doc_id = $1", [doc_id], page, per_page
+            # Get total count
+            total = await conn.fetchval(
+                "SELECT COUNT(*) FROM relationships WHERE doc_id = $1",
+                doc_id
+            )
+            
+            # Get relationships with entity names
+            rows = await conn.fetch(
+                """
+                SELECT r.id, r.source_entity_id, r.target_entity_id, r.relationship_type, 
+                       r.confidence, r.weight, r.doc_id, r.created_at,
+                       e1.entity_name as source_name, e1.entity_type as source_type,
+                       e2.entity_name as target_name, e2.entity_type as target_type
+                FROM relationships r
+                JOIN entities e1 ON r.source_entity_id = e1.id
+                JOIN entities e2 ON r.target_entity_id = e2.id
+                WHERE r.doc_id = $1
+                ORDER BY r.confidence DESC
+                LIMIT $2 OFFSET $3
+                """,
+                doc_id, per_page, offset
+            )
+            
+            return RelationshipList(
+                relationships=[self._create_response(row) for row in rows],
+                total=total,
+                page=page,
+                per_page=per_page,
+                has_next=offset + per_page < total
             )
 
     async def get_relationships_for_entity(
@@ -81,6 +111,70 @@ class RelationshipExtractionService:
             """
             row = await conn.fetchrow(query, relationship_id)
             return self._create_response(row) if row else None
+
+    async def get_relationships_by_project(self, project_id: UUID, page: int = 1, per_page: int = 100) -> RelationshipList:
+        """Get all relationships for a project (for knowledge graph visualization)."""
+        offset = (page - 1) * per_page
+        
+        async with self.db_pool.acquire() as conn:
+            total_row = await conn.fetchrow(
+                """
+                SELECT COUNT(*) as total 
+                FROM relationships r
+                JOIN documents d ON r.doc_id = d.id
+                WHERE d.project_id = $1
+                """,
+                project_id
+            )
+            
+            rows = await conn.fetch(
+                """
+                SELECT r.id, r.source_entity_id, r.target_entity_id, r.relationship_type, 
+                       r.confidence, r.weight, r.doc_id, r.created_at,
+                       e1.entity_name as source_name, e1.entity_type as source_type,
+                       e2.entity_name as target_name, e2.entity_type as target_type
+                FROM relationships r
+                JOIN documents d ON r.doc_id = d.id
+                JOIN entities e1 ON r.source_entity_id = e1.id
+                JOIN entities e2 ON r.target_entity_id = e2.id
+                WHERE d.project_id = $1
+                ORDER BY r.confidence DESC
+                LIMIT $2 OFFSET $3
+                """,
+                project_id, per_page, offset
+            )
+            
+            total = total_row['total']
+            relationships = [self._create_response(row) for row in rows]
+            
+            return RelationshipList(
+                relationships=relationships,
+                total=total,
+                page=page,
+                per_page=per_page,
+                has_next=offset + per_page < total
+            )
+
+    async def extract_relationships_for_document_pipeline(self, document_id: UUID) -> None:
+        """Extract relationships for all entities in a document (pipeline version)."""
+        async with self.db_pool.acquire() as conn:
+            # Get all entities for the document
+            entities = await self._get_entities(conn, document_id)
+            
+            if len(entities) < 2:
+                # Need at least 2 entities to form relationships
+                logfire.info(f"Not enough entities ({len(entities)}) to extract relationships for document {document_id}")
+                return
+            
+            # Create extraction request
+            from backend.models.relationships import RelationshipExtractionRequest
+            request = RelationshipExtractionRequest(
+                doc_id=document_id,
+                enable_llm_extraction=True
+            )
+            
+            # Use existing extraction logic
+            await self.extract_relationships_for_document(document_id, request)
 
     async def delete_relationship(self, relationship_id: UUID) -> bool:
         """Delete a relationship by ID."""
@@ -174,6 +268,26 @@ class RelationshipExtractionService:
 
     def _create_response(self, row: asyncpg.Record) -> RelationshipResponse:
         """Create RelationshipResponse from database row (DRY helper)."""
+        from backend.models.relationships import EntitySummary
+        
+        # Create entity summaries if entity names are available
+        source_entity = None
+        target_entity = None
+        
+        if 'source_name' in row and row['source_name']:
+            source_entity = EntitySummary(
+                id=row['source_entity_id'],
+                entity_name=row['source_name'],
+                entity_type=row['source_type']
+            )
+        
+        if 'target_name' in row and row['target_name']:
+            target_entity = EntitySummary(
+                id=row['target_entity_id'],
+                entity_name=row['target_name'],
+                entity_type=row['target_type']
+            )
+        
         return RelationshipResponse(
             id=row['id'],
             source_entity_id=row['source_entity_id'],
@@ -183,7 +297,9 @@ class RelationshipExtractionService:
             weight=row['weight'],
             metadata=None,  # No metadata in database schema
             doc_id=row['doc_id'],
-            created_at=row['created_at']
+            created_at=row['created_at'],
+            source_entity=source_entity,
+            target_entity=target_entity
         )
 
     def _create_entity_response(self, row: asyncpg.Record) -> EntityResponse:

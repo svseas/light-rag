@@ -11,7 +11,9 @@ from backend.core.dependencies import get_project_service
 router = APIRouter(tags=["frontend"])
 
 # Initialize templates
-templates = Jinja2Templates(directory="frontend/templates")
+from pathlib import Path
+templates_path = Path(__file__).parent.parent.parent.parent / "frontend" / "templates"
+templates = Jinja2Templates(directory=str(templates_path))
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
