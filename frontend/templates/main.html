@@ -1,0 +1,1311 @@
+{% extends "base.html" %}
+
+{% block title %}LightRAG - Knowledge Assistant{% endblock %}
+
+{% block body_class %}main-app{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Main app layout styles */
+.app-container {
+    display: grid;
+    grid-template-rows: 60px 1fr;
+    height: 100vh;
+    background-color: var(--bg-primary);
+}
+
+/* Header styles */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-6);
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.app-logo {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background-color: var(--success-color);
+}
+
+.status-dot.processing {
+    background-color: var(--warning-color);
+    animation: pulse 2s infinite;
+}
+
+.status-dot.idle {
+    background-color: var(--text-muted);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.user-profile {
+    position: relative;
+}
+
+.profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.profile-button:hover {
+    background-color: var(--bg-hover);
+}
+
+.profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background-color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-inverse);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.dropdown-content {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: var(--space-2);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-2);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+}
+
+.dropdown-content.active {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-hover);
+}
+
+/* Main content area */
+.app-main {
+    display: grid;
+    grid-template-columns: 35% 65%;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    overflow: hidden;
+}
+
+/* Left column - Document management */
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow: hidden;
+}
+
+.upload-section {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.upload-button {
+    width: 100%;
+    padding: var(--space-4);
+    background-color: var(--accent-color);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: var(--space-4);
+}
+
+.upload-button:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.drop-zone {
+    border: 2px dashed var(--border-medium);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+}
+
+.drop-zone.dragover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-secondary);
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.drop-zone-icon {
+    font-size: var(--text-3xl);
+    opacity: 0.5;
+}
+
+.documents-section {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.section-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.documents-list {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 -var(--space-6);
+    padding: 0 var(--space-6);
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    transition: background-color var(--transition-fast);
+    margin-bottom: var(--space-2);
+}
+
+.document-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.document-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background-color: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: var(--text-lg);
+}
+
+.document-info {
+    flex: 1;
+}
+
+.document-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+}
+
+.document-meta {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.document-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.entity-viewer {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.tabs {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.tab {
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    background-color: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+    font-size: var(--text-sm);
+}
+
+.tab.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+
+.tab:hover {
+    color: var(--text-primary);
+}
+
+.tab-content {
+    height: 200px;
+    overflow-y: auto;
+}
+
+/* Right column - Chat interface */
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow: hidden;
+}
+
+.chat-section {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-window {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 -var(--space-6);
+    padding: 0 var(--space-6);
+    margin-bottom: var(--space-4);
+}
+
+.chat-input-area {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-end;
+}
+
+.chat-input {
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+}
+
+.chat-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.rag-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.rag-toggle input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.send-button {
+    width: 44px;
+    height: 44px;
+    background-color: var(--accent-color);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-button:hover {
+    background-color: var(--accent-hover);
+}
+
+.send-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.thinking-panel {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    height: 300px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.thinking-content {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 -var(--space-6);
+    padding: 0 var(--space-6);
+}
+
+.context-item {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-secondary);
+    margin-bottom: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.entity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+    margin-bottom: var(--space-1);
+}
+
+.entity-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.entity-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.entity-type {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    background-color: var(--bg-tertiary);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .app-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+    
+    .app-header {
+        padding: 0 var(--space-4);
+    }
+    
+    .app-logo {
+        font-size: var(--text-lg);
+    }
+    
+    .left-column {
+        order: 2;
+        height: auto;
+    }
+    
+    .right-column {
+        order: 1;
+        height: 60vh;
+    }
+    
+    .documents-section {
+        height: 300px;
+    }
+    
+    .thinking-panel {
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-main {
+        padding: var(--space-2);
+        gap: var(--space-2);
+    }
+    
+    .upload-section,
+    .documents-section,
+    .entity-viewer,
+    .chat-section,
+    .thinking-panel {
+        padding: var(--space-4);
+    }
+    
+    .chat-input-area {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .chat-controls {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+/* Animation keyframes */
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* File upload progress */
+.upload-progress {
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-top: var(--space-2);
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--accent-color);
+    transition: width var(--transition-normal);
+}
+
+/* Empty states */
+.empty-state {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: var(--text-3xl);
+    margin-bottom: var(--space-4);
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="app-logo">LightRAG</div>
+        
+        <div class="status-indicator">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Ready</span>
+        </div>
+        
+        <div class="user-profile">
+            <!-- Emergency logout button for debugging -->
+            <button onclick="window.AuthManager.logout()" style="margin-right: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+            
+            <div class="profile-dropdown">
+                <button class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span id="profileName">User</span>
+                    <span>▼</span>
+                </button>
+                <div class="dropdown-content" id="profileDropdown">
+                    <a href="#" class="dropdown-item" id="profileLink">Profile</a>
+                    <a href="#" class="dropdown-item" id="logoutLink">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <!-- Left Column - Document Management -->
+        <div class="left-column">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <button class="upload-button" id="uploadButton">
+                    Upload Document
+                </button>
+                
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="drop-zone-icon">📁</div>
+                        <p>Drag & drop files here</p>
+                        <p class="text-xs text-muted">PDF, DOCX, TXT, MD • Max 5MB • Up to 5 files</p>
+                    </div>
+                </div>
+                
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="text-sm mb-2">Uploading...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.md" style="display: none;">
+            </section>
+
+            <!-- Documents List -->
+            <section class="documents-section">
+                <div class="section-header">
+                    <h3 class="section-title">Documents</h3>
+                    <button class="btn btn-sm btn-ghost" id="refreshDocuments">Refresh</button>
+                </div>
+                
+                <div class="documents-list" id="documentsList">
+                    <div class="empty-state" id="documentsEmpty">
+                        <div class="empty-state-icon">📄</div>
+                        <div class="empty-state-text">No documents uploaded yet.<br>Upload your first document to get started.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Entity Viewer -->
+            <section class="entity-viewer">
+                <div class="section-header">
+                    <h3 class="section-title">Knowledge Graph</h3>
+                    <button class="btn btn-sm btn-ghost" id="refreshEntities">Refresh</button>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" data-tab="entities">Entities</button>
+                    <button class="tab" data-tab="graph">Graph</button>
+                    <button class="tab" data-tab="relationships">Relations</button>
+                </div>
+                
+                <div class="tab-content" id="tabContent">
+                    <div class="tab-pane active" id="entitiesTab">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <div class="empty-state-text">No entities extracted yet.</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="graphTab" style="display: none;">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🕸️</div>
+                            <div class="empty-state-text">Knowledge graph will appear here.</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="relationshipsTab" style="display: none;">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔗</div>
+                            <div class="empty-state-text">No relationships found yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Column - Chat Interface -->
+        <div class="right-column">
+            <!-- Chat Section -->
+            <section class="chat-section">
+                <div class="section-header">
+                    <h3 class="section-title">Chat</h3>
+                    <button class="btn btn-sm btn-ghost" id="clearChat">Clear</button>
+                </div>
+                
+                <div class="chat-window" id="chatWindow">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <div class="empty-state-text">Start a conversation by asking a question about your documents.</div>
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <textarea 
+                        class="chat-input" 
+                        id="messageInput" 
+                        placeholder="Ask a question about your documents..."
+                        rows="1"
+                    ></textarea>
+                    
+                    <div class="chat-controls">
+                        <label class="rag-toggle">
+                            <input type="checkbox" id="useRag" checked>
+                            <span>Use RAG</span>
+                        </label>
+                        <button class="send-button" id="sendButton">
+                            <span>▶</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Thinking Panel -->
+            <section class="thinking-panel">
+                <div class="section-header">
+                    <h3 class="section-title">Thinking Process</h3>
+                    <div class="tabs">
+                        <button class="tab active" data-tab="context">Context</button>
+                        <button class="tab" data-tab="entities-match">Entities</button>
+                        <button class="tab" data-tab="reasoning">Reasoning</button>
+                    </div>
+                </div>
+                
+                <div class="thinking-content" id="thinkingContent">
+                    <div class="tab-pane active" id="contextTab">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧠</div>
+                            <div class="empty-state-text">Retrieved context will appear here when you ask a question.</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="entitiesMatchTab" style="display: none;">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🎯</div>
+                            <div class="empty-state-text">Matched entities will appear here.</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="reasoningTab" style="display: none;">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🤔</div>
+                            <div class="empty-state-text">Reasoning trace will appear here.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug script loading
+    console.log('=== SCRIPT LOADING DEBUG ===');
+    console.log('AuthManager available:', typeof window.AuthManager !== 'undefined');
+    console.log('AuthManager type:', typeof window.AuthManager);
+    console.log('AuthManager methods:', window.AuthManager ? Object.getOwnPropertyNames(Object.getPrototypeOf(window.AuthManager)) : 'N/A');
+    console.log('authenticatedFetch method:', window.AuthManager ? typeof window.AuthManager.authenticatedFetch : 'N/A');
+    console.log('API available:', typeof window.API !== 'undefined');
+    console.log('appState available:', typeof appState !== 'undefined');
+    console.log('AppConfig available:', typeof AppConfig !== 'undefined');
+    console.log('============================');
+    
+    // Check authentication first
+    if (typeof window.AuthManager === 'undefined') {
+        console.error('AuthManager is not loaded');
+        window.location.href = '/login';
+        return;
+    }
+
+    if (!window.AuthManager.isAuthenticated()) {
+        console.log('User not authenticated, redirecting to login');
+        window.location.href = '/login';
+        return;
+    }
+    
+    console.log('User is authenticated, token:', window.AuthManager.getToken() ? 'present' : 'missing');
+
+    // Initialize main app functionality
+    initializeApp();
+    
+    async function initializeApp() {
+        // Load user profile
+        await loadUserProfile();
+        
+        // Load user's project
+        await loadProject();
+        
+        // Load documents
+        await loadDocuments();
+        
+        // Initialize event listeners
+        initializeEventListeners();
+        
+        // Initialize file upload
+        initializeFileUpload();
+        
+        // Initialize chat
+        initializeChat();
+        
+        // Initialize tabs
+        initializeTabs();
+        
+        console.log('Main app initialized');
+    }
+    
+    async function loadUserProfile() {
+        try {
+            const profile = await window.AuthManager.getProfile();
+            if (profile) {
+                document.getElementById('profileName').textContent = profile.email.split('@')[0];
+                document.getElementById('profileAvatar').textContent = profile.email[0].toUpperCase();
+                appState.setState({ user: profile });
+            }
+        } catch (error) {
+            console.error('Failed to load profile:', error);
+        }
+    }
+    
+    async function loadProject() {
+        try {
+            console.log('Starting to load project...');
+            console.log('AuthManager available:', typeof window.AuthManager !== 'undefined');
+            console.log('API available:', typeof window.API !== 'undefined');
+            console.log('User authenticated:', window.AuthManager?.isAuthenticated());
+            console.log('Auth token exists:', !!window.AuthManager?.getToken());
+            
+            // Now use the API class which should work properly
+            const project = await API.get('/projects/me');
+            console.log('Project loaded successfully via API class:', project);
+            appState.setState({ project });
+            
+            // Also update the UI to remove error messages
+            const errorElements = document.querySelectorAll('.toast-error');
+            errorElements.forEach(el => el.remove());
+            
+        } catch (error) {
+            console.error('Failed to load project:', error);
+            console.error('Error details:', error.message);
+            console.error('Error stack:', error.stack);
+            
+            // Check if it's a 404 error (no project exists)
+            if (error.message && error.message.includes('404')) {
+                console.log('User has no project, redirecting to project creation');
+                window.location.href = '/create-project';
+                return;
+            }
+            
+            // For other errors, show a console message but don't block the UI
+            console.error('Failed to load project, but continuing. User can manually create one.');
+            // Show in the UI that there's an issue
+            if (typeof showToast === 'function') {
+                showToast(`Project loading failed: ${error.message}`, 'error');
+            }
+        }
+    }
+    
+    async function loadDocuments() {
+        try {
+            if (!appState.project) {
+                console.log('No project available, skipping document loading');
+                return;
+            }
+            
+            console.log('Starting to load documents via API class...');
+            const documentsResponse = await API.get('/documents');
+            console.log('Documents loaded successfully via API class:', documentsResponse);
+            
+            // Extract documents array from the API response
+            const documents = documentsResponse.documents || [];
+            appState.setState({ documents });
+            renderDocuments(documents);
+        } catch (error) {
+            console.error('Failed to load documents:', error);
+        }
+    }
+    
+    function renderDocuments(documents) {
+        const container = document.getElementById('documentsList');
+        const empty = document.getElementById('documentsEmpty');
+        
+        console.log('renderDocuments called with:', documents.length, 'documents');
+        console.log('container element:', container);
+        console.log('empty element:', empty);
+        
+        if (!container || !empty) {
+            console.error('Required DOM elements not found:', { container, empty });
+            return;
+        }
+        
+        if (documents.length === 0) {
+            empty.style.display = 'block';
+            container.innerHTML = '';
+            return;
+        }
+        
+        empty.style.display = 'none';
+        
+        const html = documents.map(doc => `
+            <div class="document-item" data-id="${doc.id}">
+                <div class="document-icon">📄</div>
+                <div class="document-info">
+                    <div class="document-title">${Utils.escapeHtml(doc.name || doc.title || 'Untitled')}</div>
+                    <div class="document-meta">${doc.original_format || ''} • ${Utils.formatDate(doc.created_at)}</div>
+                </div>
+                <div class="document-actions">
+                    <button class="action-btn" onclick="previewDocument('${doc.id}')" title="Preview">👁️</button>
+                    <button class="action-btn" onclick="deleteDocument('${doc.id}')" title="Delete">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+    
+    function initializeEventListeners() {
+        // Profile dropdown
+        document.getElementById('profileButton').addEventListener('click', function() {
+            document.getElementById('profileDropdown').classList.toggle('active');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.profile-dropdown')) {
+                document.getElementById('profileDropdown').classList.remove('active');
+            }
+        });
+        
+        // Logout
+        document.getElementById('logoutLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Close dropdown first
+            document.getElementById('profileDropdown').classList.remove('active');
+            
+            // Show confirmation and logout
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    window.AuthManager.logout();
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    // Force redirect if logout fails
+                    window.location.href = '/login';
+                }
+            }
+        });
+        
+        // Refresh buttons
+        document.getElementById('refreshDocuments').addEventListener('click', loadDocuments);
+        document.getElementById('refreshEntities').addEventListener('click', loadEntities);
+        
+        // Clear chat
+        document.getElementById('clearChat').addEventListener('click', clearChat);
+    }
+    
+    function initializeFileUpload() {
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        
+        uploadButton.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', handleFileUpload);
+        
+        // Drag and drop
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleFileDrop);
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.add('dragover');
+    }
+    
+    function handleDragLeave(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.remove('dragover');
+    }
+    
+    function handleFileDrop(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files);
+        handleFileUpload({ target: { files } });
+    }
+    
+    async function handleFileUpload(e) {
+        const files = Array.from(e.target.files);
+        
+        if (files.length === 0) return;
+        
+        // Validate files
+        const validFiles = files.filter(file => {
+            if (!Utils.validateFileType(file)) {
+                showToast(`Invalid file type: ${file.name}`, 'error');
+                return false;
+            }
+            if (!Utils.validateFileSize(file)) {
+                showToast(`File too large: ${file.name}`, 'error');
+                return false;
+            }
+            return true;
+        });
+        
+        if (validFiles.length === 0) return;
+        
+        if (validFiles.length > AppConfig.maxFiles) {
+            showToast(`Maximum ${AppConfig.maxFiles} files allowed`, 'error');
+            return;
+        }
+        
+        // Check if user has project
+        console.log('=== FILE UPLOAD DEBUG ===');
+        console.log('Current appState:', appState);
+        console.log('Current appState.project:', appState.project);
+        console.log('typeof appState.project:', typeof appState.project);
+        console.log('appState.project === null:', appState.project === null);
+        console.log('appState.project === undefined:', appState.project === undefined);
+        console.log('==========================');
+        
+        if (!appState.project) {
+            console.error('No project found in appState, project loading may have failed');
+            console.error('Available appState keys:', Object.keys(appState));
+            showToast('Please create a project first', 'error');
+            return;
+        }
+        
+        // Upload files using direct fetch
+        for (const file of validFiles) {
+            await uploadFileDirectly(file);
+        }
+        
+        // Refresh documents list after upload
+        console.log('Refreshing documents list after upload...');
+        await loadDocuments();
+    }
+    
+    async function uploadFileDirectly(file) {
+        try {
+            console.log('Starting direct file upload for:', file.name);
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = window.AuthManager.getToken();
+            const response = await fetch('/api/documents/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+            
+            console.log('Upload response status:', response.status);
+            console.log('Upload response ok:', response.ok);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('File uploaded successfully:', result);
+                showToast(`${file.name} uploaded successfully`, 'success');
+            } else {
+                const errorText = await response.text();
+                console.error('Upload failed:', response.status, errorText);
+                showToast(`Failed to upload ${file.name}: ${errorText}`, 'error');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showToast(`Upload error: ${error.message}`, 'error');
+        }
+    }
+    
+    async function uploadFile(file) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const progressContainer = document.getElementById('uploadProgress');
+            const progressFill = document.getElementById('progressFill');
+            
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            
+            // Simulate progress (you can implement real progress tracking)
+            const progressInterval = setInterval(() => {
+                const currentWidth = parseFloat(progressFill.style.width);
+                if (currentWidth < 90) {
+                    progressFill.style.width = (currentWidth + 10) + '%';
+                }
+            }, 200);
+            
+            const result = await API.upload('/documents/upload', formData);
+            
+            clearInterval(progressInterval);
+            progressFill.style.width = '100%';
+            
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 1000);
+            
+            showToast(`${file.name} uploaded successfully`, 'success');
+            
+        } catch (error) {
+            console.error('Upload failed:', error);
+            showToast(`Upload failed: ${error.message}`, 'error');
+            document.getElementById('uploadProgress').style.display = 'none';
+        }
+    }
+    
+    function initializeChat() {
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        sendButton.addEventListener('click', sendMessage);
+    }
+    
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Add user message to chat
+        addChatMessage(message, 'user');
+        
+        // Clear input
+        input.value = '';
+        input.style.height = 'auto';
+        
+        // Show thinking
+        setStatus('Processing', 'processing');
+        
+        try {
+            // Send to backend (placeholder for now)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Add bot response
+            addChatMessage('I understand your question. However, the chat functionality is not fully implemented yet. Please check back later!', 'bot');
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            addChatMessage('Sorry, I encountered an error. Please try again.', 'bot');
+        } finally {
+            setStatus('Ready', 'idle');
+        }
+    }
+    
+    function addChatMessage(message, sender) {
+        const chatWindow = document.getElementById('chatWindow');
+        const emptyState = chatWindow.querySelector('.empty-state');
+        
+        if (emptyState) {
+            emptyState.remove();
+        }
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = `chat-message ${sender}`;
+        messageElement.innerHTML = `
+            <div class="message-content">${Utils.escapeHtml(message)}</div>
+            <div class="message-time">${new Date().toLocaleTimeString()}</div>
+        `;
+        
+        chatWindow.appendChild(messageElement);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+    
+    function clearChat() {
+        const chatWindow = document.getElementById('chatWindow');
+        chatWindow.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-text">Start a conversation by asking a question about your documents.</div>
+            </div>
+        `;
+    }
+    
+    function initializeTabs() {
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabGroup = this.closest('.tabs');
+                const contentContainer = tabGroup.parentElement.nextElementSibling;
+                const tabName = this.dataset.tab;
+                
+                // Update active tab
+                tabGroup.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update active content
+                contentContainer.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.style.display = 'none';
+                    pane.classList.remove('active');
+                });
+                
+                const targetPane = document.getElementById(tabName + 'Tab');
+                if (targetPane) {
+                    targetPane.style.display = 'block';
+                    targetPane.classList.add('active');
+                }
+            });
+        });
+    }
+    
+    function setStatus(text, type = 'idle') {
+        document.getElementById('statusText').textContent = text;
+        const dot = document.getElementById('statusDot');
+        dot.className = `status-dot ${type}`;
+        appState.setState({ status: text });
+    }
+    
+    async function loadEntities() {
+        // Placeholder for entity loading
+        showToast('Entity loading not implemented yet', 'info');
+    }
+    
+    // Global functions for document actions
+    window.previewDocument = function(docId) {
+        showToast('Document preview not implemented yet', 'info');
+    };
+    
+    window.deleteDocument = async function(docId) {
+        if (!confirm('Are you sure you want to delete this document?')) return;
+        
+        try {
+            await API.delete(`/documents/${docId}`);
+            showToast('Document deleted successfully', 'success');
+            await loadDocuments();
+        } catch (error) {
+            console.error('Delete failed:', error);
+            showToast('Failed to delete document', 'error');
+        }
+    };
+});
+</script>
+
+<style>
+/* Chat message styles */
+.chat-message {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    max-width: 80%;
+}
+
+.chat-message.user {
+    background-color: var(--accent-color);
+    color: var(--text-inverse);
+    margin-left: auto;
+}
+
+.chat-message.bot {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.message-content {
+    margin-bottom: var(--space-1);
+}
+
+.message-time {
+    font-size: var(--text-xs);
+    opacity: 0.7;
+}
+</style>
+{% endblock %}

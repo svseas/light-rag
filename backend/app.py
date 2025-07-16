@@ -1,8 +1,10 @@
 import logfire
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from backend.api.main_routes import api_router
+from backend.api.routes.frontend import router as frontend_router
 from backend.core.config import configure_logfire, setup_directories
 
 
@@ -34,8 +36,14 @@ def create_app() -> FastAPI:
     # Instrument FastAPI with logfire
     logfire.instrument_fastapi(app)
     
+    # Mount static files
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    
     # Include API routes
     app.include_router(api_router, prefix="/api")
+    
+    # Include frontend routes
+    app.include_router(frontend_router)
     
     # Setup directories on startup
     @app.on_event("startup")

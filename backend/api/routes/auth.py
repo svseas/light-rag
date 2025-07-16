@@ -35,20 +35,22 @@ async def get_current_user(
 
 @router.post("/signup", response_model=AuthResponse)
 async def sign_up(
-    request: AuthRequest,
+    request: dict,
     service: AuthService = Depends(get_auth_service)
 ) -> AuthResponse:
     """Create new user account."""
-    return await service.sign_up(request)
+    auth_request = AuthRequest(email=request["email"], password=request["password"])
+    return await service.sign_up(auth_request)
 
 
 @router.post("/signin", response_model=AuthResponse)
 async def sign_in(
-    request: AuthRequest,
+    request: dict,
     service: AuthService = Depends(get_auth_service)
 ) -> AuthResponse:
     """Sign in user."""
-    return await service.sign_in(request)
+    auth_request = AuthRequest(email=request["email"], password=request["password"])
+    return await service.sign_in(auth_request)
 
 
 @router.post("/verify", response_model=User)
@@ -69,3 +71,41 @@ async def get_profile(
 ) -> User:
     """Get current user profile."""
     return current_user
+
+
+@router.post("/resend-verification", response_model=AuthResponse)
+async def resend_verification(
+    request: dict,
+    service: AuthService = Depends(get_auth_service)
+) -> AuthResponse:
+    """Resend email verification."""
+    email = request.get("email")
+    if not email:
+        return AuthResponse(success=False, message="Email is required")
+    return await service.resend_verification(email)
+
+
+@router.post("/check-verification", response_model=dict)
+async def check_verification(
+    request: dict,
+    service: AuthService = Depends(get_auth_service)
+) -> dict:
+    """Check if email is verified."""
+    email = request.get("email")
+    if not email:
+        return {"verified": False, "error": "Email is required"}
+    is_verified = await service.check_email_verification(email)
+    return {"verified": is_verified}
+
+
+@router.get("/verify-email-token")
+async def verify_email_token(
+    token: str,
+    service: AuthService = Depends(get_auth_service)
+) -> dict:
+    """Verify email with token from email link."""
+    result = await service.verify_email_token(token)
+    if result.success:
+        return {"message": "Email verified successfully", "success": True}
+    else:
+        raise HTTPException(status_code=400, detail=result.message)

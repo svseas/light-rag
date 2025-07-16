@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Create Project - LightRAG{% endblock %}
+
+{% block body_class %}create-project-page{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Project creation page styles */
+.create-project-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    padding: var(--space-4);
+}
+
+.create-project-card {
+    width: 100%;
+    max-width: 500px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-xl);
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.create-project-header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.create-project-logo {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: var(--space-2);
+}
+
+.create-project-subtitle {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+}
+
+.welcome-message {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+    text-align: center;
+}
+
+.welcome-text {
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    margin-bottom: var(--space-2);
+}
+
+.demo-note {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-style: italic;
+}
+
+.create-project-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.form-label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-input {
+    padding: var(--space-4);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    transition: all var(--transition-fast);
+    background-color: var(--bg-primary);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.form-input.error {
+    border-color: var(--error-color);
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.form-error {
+    color: var(--error-color);
+    font-size: var(--text-xs);
+    margin-top: var(--space-1);
+}
+
+.form-hint {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    margin-top: var(--space-1);
+}
+
+.create-project-button {
+    padding: var(--space-4);
+    background-color: var(--accent-color);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-top: var(--space-2);
+}
+
+.create-project-button:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.create-project-button:active {
+    transform: translateY(0);
+}
+
+.create-project-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.logout-link {
+    text-align: center;
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-light);
+}
+
+.logout-link a {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.logout-link a:hover {
+    color: var(--accent-color);
+}
+
+.loading-spinner-small {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--text-inverse);
+    border-radius: var(--radius-full);
+    animation: spin 1s linear infinite;
+    margin-right: var(--space-2);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .create-project-container {
+        padding: var(--space-2);
+    }
+    
+    .create-project-card {
+        padding: var(--space-6);
+    }
+    
+    .create-project-logo {
+        font-size: var(--text-2xl);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-project-container">
+    <div class="create-project-card">
+        <div class="create-project-header">
+            <h1 class="create-project-logo">LightRAG</h1>
+            <p class="create-project-subtitle">Create your first project</p>
+        </div>
+
+        <div class="welcome-message">
+            <p class="welcome-text">Welcome! Let's get you started with your first project.</p>
+            <p class="demo-note">For demo purposes, you can create one project with up to 5 documents.</p>
+        </div>
+
+        <form class="create-project-form" id="createProjectForm">
+            <div class="form-group">
+                <label class="form-label" for="projectName">Project Name</label>
+                <input 
+                    type="text" 
+                    id="projectName" 
+                    name="projectName" 
+                    class="form-input" 
+                    placeholder="Enter your project name"
+                    required
+                    maxlength="100"
+                    autocomplete="off"
+                >
+                <div class="form-error" id="projectNameError"></div>
+                <div class="form-hint">Choose a descriptive name for your project</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="projectDescription">Description (Optional)</label>
+                <textarea 
+                    id="projectDescription" 
+                    name="projectDescription" 
+                    class="form-input" 
+                    placeholder="Describe what this project is about"
+                    rows="3"
+                    maxlength="500"
+                    autocomplete="off"
+                ></textarea>
+                <div class="form-error" id="projectDescriptionError"></div>
+                <div class="form-hint">Help your future self remember what this project is for</div>
+            </div>
+
+            <button type="submit" class="create-project-button" id="createProjectButton">
+                <span id="buttonText">Create Project</span>
+            </button>
+        </form>
+
+        <div class="logout-link">
+            <a href="#" id="logoutLink">Sign out</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/validator@13.11.0/validator.min.js"></script>
+<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createProjectForm = document.getElementById('createProjectForm');
+    const projectNameInput = document.getElementById('projectName');
+    const projectDescriptionInput = document.getElementById('projectDescription');
+    const createProjectButton = document.getElementById('createProjectButton');
+    const buttonText = document.getElementById('buttonText');
+    const logoutLink = document.getElementById('logoutLink');
+
+    // Check if AuthManager is loaded
+    if (typeof window.AuthManager === 'undefined') {
+        console.error('AuthManager is not loaded.');
+        window.location.href = '/login';
+        return;
+    }
+
+    // Check if user is authenticated
+    if (!window.AuthManager.isAuthenticated()) {
+        window.location.href = '/login';
+        return;
+    }
+
+    // Handle form submission
+    createProjectForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const projectName = projectNameInput.value.trim();
+        const projectDescription = projectDescriptionInput.value.trim();
+        
+        if (!validateForm(projectName, projectDescription)) {
+            return;
+        }
+        
+        setLoadingState(true);
+        
+        try {
+            const response = await fetch('/api/projects/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${window.AuthManager.getToken()}`
+                },
+                body: JSON.stringify({
+                    name: projectName,
+                    description: projectDescription
+                })
+            });
+            
+            if (response.ok) {
+                window.location.href = '/';
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Failed to create project');
+            }
+        } catch (error) {
+            console.error('Create project error:', error);
+            alert('An error occurred while creating the project');
+        } finally {
+            setLoadingState(false);
+        }
+    });
+
+    // Handle logout
+    logoutLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to sign out?')) {
+            window.AuthManager.logout();
+        }
+    });
+
+    function validateForm(projectName, projectDescription) {
+        clearErrors();
+        let isValid = true;
+        
+        if (!projectName) {
+            showFieldError('projectName', 'Project name is required');
+            isValid = false;
+        } else if (projectName.length < 3) {
+            showFieldError('projectName', 'Project name must be at least 3 characters');
+            isValid = false;
+        } else if (projectName.length > 100) {
+            showFieldError('projectName', 'Project name must be less than 100 characters');
+            isValid = false;
+        }
+        
+        if (projectDescription.length > 500) {
+            showFieldError('projectDescription', 'Description must be less than 500 characters');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+
+    function showFieldError(fieldName, message) {
+        const errorElement = document.getElementById(fieldName + 'Error');
+        const inputElement = document.getElementById(fieldName);
+        
+        if (errorElement) errorElement.textContent = message;
+        if (inputElement) inputElement.classList.add('error');
+    }
+
+    function clearErrors() {
+        ['projectName', 'projectDescription'].forEach(fieldName => {
+            const errorElement = document.getElementById(fieldName + 'Error');
+            const inputElement = document.getElementById(fieldName);
+            
+            if (errorElement) errorElement.textContent = '';
+            if (inputElement) inputElement.classList.remove('error');
+        });
+    }
+
+    function setLoadingState(loading) {
+        createProjectButton.disabled = loading;
+        buttonText.innerHTML = loading 
+            ? '<div class="loading-spinner-small"></div>Creating Project...' 
+            : 'Create Project';
+    }
+});
+</script>
+{% endblock %}

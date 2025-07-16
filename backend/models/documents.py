@@ -16,6 +16,7 @@ class DocumentCreate(DocumentBase):
     
     file_path: str = Field(..., min_length=1)
     file_size: int = Field(..., gt=0)
+    project_id: UUID | None = None
     
     @field_validator('original_format')
     @classmethod
@@ -53,6 +54,7 @@ class Document(DocumentBase):
     """Full document model with all fields."""
     
     id: UUID = Field(default_factory=uuid4)
+    project_id: UUID | None = None
     content_md: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

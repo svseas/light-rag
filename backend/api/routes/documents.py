@@ -5,7 +5,10 @@ import logfire
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
 
+from backend.api.routes.auth import get_current_user
 from backend.core.config import get_settings
+from backend.core.dependencies import get_project_service
+from backend.models.auth import User
 from backend.models.documents import (
     DocumentCreate,
     DocumentError,
@@ -15,6 +18,7 @@ from backend.models.documents import (
     DocumentUploadResponse,
 )
 from backend.services.document_service import document_service
+from backend.services.project_service import ProjectService
 
 router = APIRouter()
 
@@ -22,6 +26,8 @@ router = APIRouter()
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
     settings = Depends(get_settings),
 ):
     """Upload a document for processing.
@@ -39,6 +45,23 @@ async def upload_document(
     with logfire.span("upload_document") as span:
         span.set_attribute("filename", file.filename)
         span.set_attribute("content_type", file.content_type)
+        span.set_attribute("user_id", current_user.uid)
+        
+        # Check if user has a project
+        project = await project_service.get_user_project(current_user.uid)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please create a project first"
+            )
+        
+        # Check document limit (5 documents per project)
+        document_count = await document_service.count_documents_by_project(project.id)
+        if document_count >= 5:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Document limit reached (5 documents per project)"
+            )
         
         if not file.filename:
             raise HTTPException(
@@ -83,6 +106,7 @@ async def upload_document(
                 original_format=file_extension,
                 file_path=str(file_save_path),
                 file_size=file_size,
+                project_id=project.id,
             )
             
             # Process document
@@ -129,6 +153,8 @@ async def upload_document(
 
 @router.get("/", response_model=DocumentList)
 async def list_documents(
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
 ):
@@ -147,9 +173,18 @@ async def list_documents(
     with logfire.span("list_documents") as span:
         span.set_attribute("page", page)
         span.set_attribute("per_page", per_page)
+        span.set_attribute("user_id", current_user.uid)
+        
+        # Get user's project
+        project = await project_service.get_user_project(current_user.uid)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please create a project first"
+            )
         
         try:
-            result = await document_service.list_documents(page, per_page)
+            result = await document_service.list_documents_by_project(project.id, page, per_page)
             return result
             
         except DocumentError as e:

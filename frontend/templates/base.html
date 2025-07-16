@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LightRAG{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+    {% block extra_css %}{% endblock %}
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Meta tags -->
+    <meta name="description" content="LightRAG - A demonstration RAG system using PydanticAI and PostgreSQL">
+    <meta name="theme-color" content="#2563eb">
+    
+    <!-- Favicon (using data URI for now) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="page-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', path='/js/auth.js') }}?v=6"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v=6"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <!-- HTMX Configuration -->
+    <script>
+        // Configure HTMX with authentication
+        document.addEventListener('htmx:configRequest', (event) => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                event.detail.headers['Authorization'] = `Bearer ${token}`;
+            }
+        });
+
+        // Handle authentication errors
+        document.addEventListener('htmx:responseError', (event) => {
+            if (event.detail.xhr.status === 401) {
+                localStorage.removeItem('authToken');
+                window.location.href = '/login';
+            }
+        });
+
+        // Show loading indicator
+        document.addEventListener('htmx:beforeRequest', () => {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        });
+
+        document.addEventListener('htmx:afterRequest', () => {
+            document.getElementById('loading-overlay').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

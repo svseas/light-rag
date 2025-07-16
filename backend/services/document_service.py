@@ -48,6 +48,7 @@ class DocumentService:
             try:
                 document = Document(
                     name=document_data.name,
+                    project_id=document_data.project_id,
                     original_format=document_data.original_format,
                 )
                 
@@ -322,13 +323,14 @@ class DocumentService:
         try:
             await conn.execute(
                 """
-                INSERT INTO documents (id, name, original_format, content_md, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO documents (id, name, original_format, content_md, project_id, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
                 document.id,
                 document.name,
                 document.original_format,
                 document.content_md,
+                document.project_id,
                 document.created_at,
                 document.updated_at,
             )
@@ -466,6 +468,111 @@ class DocumentService:
             
         finally:
             await conn.close()
+    
+    async def count_documents_by_project(self, project_id: UUID) -> int:
+        """Count documents in a project.
+        
+        Args:
+            project_id: Project UUID.
+            
+        Returns:
+            Number of documents in the project.
+        """
+        conn = await self._get_db_connection()
+        try:
+            count = await conn.fetchval(
+                "SELECT COUNT(*) FROM documents WHERE project_id = $1",
+                project_id
+            )
+            return count or 0
+        finally:
+            await conn.close()
+    
+    async def list_documents_by_project(
+        self, project_id: UUID, page: int = 1, per_page: int = 10
+    ) -> DocumentList:
+        """List documents for a specific project with pagination.
+        
+        Args:
+            project_id: Project UUID.
+            page: Page number (starts from 1).
+            per_page: Number of documents per page.
+            
+        Returns:
+            DocumentList with paginated documents.
+            
+        Raises:
+            DocumentError: If listing fails.
+        """
+        with logfire.span("document_service.list_documents_by_project") as span:
+            span.set_attribute("project_id", str(project_id))
+            span.set_attribute("page", page)
+            span.set_attribute("per_page", per_page)
+            
+            try:
+                conn = await self._get_db_connection()
+                
+                # Get total count for project
+                total = await conn.fetchval(
+                    "SELECT COUNT(*) FROM documents WHERE project_id = $1",
+                    project_id
+                )
+                
+                # Calculate offset
+                offset = (page - 1) * per_page
+                
+                # Get documents for project
+                rows = await conn.fetch(
+                    """
+                    SELECT id, name, original_format, content_md, created_at, updated_at
+                    FROM documents 
+                    WHERE project_id = $1
+                    ORDER BY created_at DESC
+                    LIMIT $2 OFFSET $3
+                    """,
+                    project_id,
+                    per_page,
+                    offset
+                )
+                
+                await conn.close()
+                
+                # Convert to response models
+                documents = []
+                for row in rows:
+                    doc_response = DocumentResponse(
+                        id=row['id'],
+                        name=row['name'],
+                        original_format=row['original_format'],
+                        content_md=row['content_md'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at'],
+                    )
+                    documents.append(doc_response)
+                
+                total_count = total or 0
+                total_pages = (total_count + per_page - 1) // per_page
+                
+                return DocumentList(
+                    documents=documents,
+                    total=total_count,
+                    page=page,
+                    per_page=per_page,
+                    has_next=page < total_pages,
+                    has_prev=page > 1,
+                )
+                
+            except Exception as e:
+                logfire.error(
+                    "Error listing documents by project",
+                    project_id=str(project_id),
+                    error=str(e),
+                )
+                
+                raise DocumentError(
+                    error_type="database_error",
+                    message=f"Failed to list documents: {str(e)}",
+                )
 
 
 document_service = DocumentService()
