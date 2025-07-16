@@ -665,10 +665,6 @@
                 </div>
                 
                 <div class="documents-list" id="documentsList">
-                    <div class="empty-state" id="documentsEmpty">
-                        <div class="empty-state-icon">📄</div>
-                        <div class="empty-state-text">No documents uploaded yet.<br>Upload your first document to get started.</div>
-                    </div>
                 </div>
             </section>
 
@@ -911,24 +907,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function renderDocuments(documents) {
         const container = document.getElementById('documentsList');
-        const empty = document.getElementById('documentsEmpty');
         
         console.log('renderDocuments called with:', documents.length, 'documents');
         console.log('container element:', container);
-        console.log('empty element:', empty);
         
-        if (!container || !empty) {
-            console.error('Required DOM elements not found:', { container, empty });
+        if (!container) {
+            console.error('Required DOM elements not found:', { container });
             return;
         }
         
         if (documents.length === 0) {
-            empty.style.display = 'block';
-            container.innerHTML = '';
+            container.innerHTML = `
+                <div class="empty-state" id="documentsEmpty">
+                    <div class="empty-state-icon">📄</div>
+                    <div class="empty-state-text">No documents uploaded yet.<br>Upload your first document to get started.</div>
+                </div>
+            `;
             return;
         }
-        
-        empty.style.display = 'none';
         
         const html = documents.map(doc => `
             <div class="document-item" data-id="${doc.id}">
