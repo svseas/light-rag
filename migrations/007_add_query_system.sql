@@ -4,7 +4,7 @@
 -- Query history table for storing user queries and responses
 CREATE TABLE IF NOT EXISTS query_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID,
+    user_id VARCHAR(128),
     project_id UUID,
     query_text TEXT NOT NULL,
     response_text TEXT NOT NULL,

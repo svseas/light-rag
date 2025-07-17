@@ -38,7 +38,7 @@ async def process_query(
 
 @router.get("/history/{user_id}", response_model=list[QueryHistory])
 async def get_user_query_history(
-    user_id: UUID,
+    user_id: str,
     limit: int = 50,
     service: QueryService = Depends(get_query_service)
 ) -> list[QueryHistory]:
@@ -63,7 +63,7 @@ async def get_user_query_history(
 
 @router.delete("/history/{user_id}/{query_id}")
 async def delete_query_from_history(
-    user_id: UUID,
+    user_id: str,
     query_id: UUID,
     service: QueryService = Depends(get_query_service)
 ) -> dict[str, str]:

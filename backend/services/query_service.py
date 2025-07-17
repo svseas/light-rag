@@ -1,6 +1,7 @@
 """Main query processing service coordinating all components."""
 
 import time
+import orjson
 from uuid import uuid4, UUID
 from datetime import datetime
 from backend.models.queries import (
@@ -119,10 +120,10 @@ class QueryService:
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             """, 
             query_id, request.user_id, request.project_id, request.query,
-            response, metadata, metadata, datetime.now()
+            response, orjson.dumps(metadata).decode(), orjson.dumps(metadata).decode(), datetime.now()
             )
     
-    async def get_query_history(self, user_id: UUID, limit: int = 50) -> list[QueryHistory]:
+    async def get_query_history(self, user_id: str, limit: int = 50) -> list[QueryHistory]:
         """Get query history for user.
         
         Args:
@@ -149,14 +150,14 @@ class QueryService:
                     project_id=row["project_id"],
                     query_text=row["query_text"],
                     response_text=row["response_text"],
-                    context_used=row["context_used"],
-                    metadata=row["metadata"],
+                    context_used=orjson.loads(row["context_used"]) if row["context_used"] else {},
+                    metadata=orjson.loads(row["metadata"]) if row["metadata"] else {},
                     created_at=row["created_at"]
                 )
                 for row in rows
             ]
     
-    async def delete_query_history(self, user_id: UUID, query_id: UUID) -> bool:
+    async def delete_query_history(self, user_id: str, query_id: UUID) -> bool:
         """Delete specific query from history.
         
         Args:

@@ -210,17 +210,30 @@ class SearchService:
                 LIMIT $1
             """, limit, query, [str(doc_id) for doc_id in document_ids])
             
-            # Semantic search within documents  
-            semantic_results = await conn.fetch(f"""
-                SELECT c.id, c.content, c.doc_id as source,
-                       1.0 - (e.embedding <=> $2) as score
-                FROM chunks c
-                JOIN embeddings e ON c.id = e.chunk_id
-                WHERE e.embedding IS NOT NULL
-                      {doc_filter}
-                ORDER BY e.embedding <=> $2
-                LIMIT $1
-            """, limit, query, [str(doc_id) for doc_id in document_ids])
+            # For semantic search, we'll use the semantic search service
+            # which properly handles embedding generation
+            try:
+                from backend.models.embeddings import SemanticSearchRequest
+                search_request = SemanticSearchRequest(
+                    query=query,
+                    limit=limit,
+                    similarity_threshold=0.3,
+                    doc_id=document_ids[0] if document_ids else None  # Use first doc for filtering
+                )
+                semantic_response = await self.semantic_search.embedding_service.semantic_search(search_request)
+                semantic_search_results = [
+                    SearchResult(
+                        id=str(result.content_id),
+                        content=result.content_preview or "No preview available",
+                        source=str(document_ids[0]) if document_ids else "unknown",
+                        score=result.similarity_score,
+                        metadata={"type": "semantic", "content_type": result.content_type}
+                    )
+                    for result in semantic_response.results
+                ]
+            except Exception as e:
+                print(f"Error in document-specific semantic search: {e}")
+                semantic_search_results = []
         
         keyword_search_results = [
             SearchResult(
@@ -231,17 +244,6 @@ class SearchService:
                 metadata={"type": "keyword"}
             )
             for row in keyword_results
-        ]
-        
-        semantic_search_results = [
-            SearchResult(
-                id=str(row["id"]),
-                content=row["content"],
-                source=str(row["source"]),
-                score=float(row["score"]),
-                metadata={"type": "semantic"}
-            )
-            for row in semantic_results
         ]
         
         return SearchResults(

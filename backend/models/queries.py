@@ -89,7 +89,7 @@ class QueryResponse(BaseModel):
 class QueryProcessingRequest(BaseModel):
     """Request for query processing."""
     query: str = Field(..., min_length=1, description="User query text")
-    user_id: UUID | None = Field(None, description="User identifier")
+    user_id: str | None = Field(None, description="User identifier")
     project_id: UUID | None = Field(None, description="Project context")
     document_ids: list[UUID] | None = Field(None, description="Specific documents to search")
     max_results: int = Field(default=10, description="Maximum results to return")
@@ -111,7 +111,7 @@ class QueryProcessingResponse(BaseModel):
 class QueryHistory(BaseModel):
     """Query history record."""
     id: UUID = Field(..., description="Query ID")
-    user_id: UUID | None = Field(None, description="User identifier")
+    user_id: str | None = Field(None, description="User identifier")
     project_id: UUID | None = Field(None, description="Project context")
     query_text: str = Field(..., description="Original query")
     response_text: str = Field(..., description="Generated response")
