@@ -1,5 +1,6 @@
 """Context building agent for assembling relevant information."""
 
+import logfire
 from pydantic_ai import Agent
 from backend.models.queries import QueryContext, ContextItem, SearchResults
 from backend.core.config import get_settings, setup_pydantic_ai_environment
@@ -111,12 +112,49 @@ async def build_context(query: str, search_results: SearchResults,
         "max_tokens": max_tokens
     }
     
-    global context_builder_agent
-    if context_builder_agent is None:
-        context_builder_agent = create_context_builder_agent()
+    with logfire.span("context_building") as span:
+        span.set_attribute("search_results_keyword_count", len(search_results.keyword_results))
+        span.set_attribute("search_results_semantic_count", len(search_results.semantic_results))
+        span.set_attribute("search_results_graph_count", len(search_results.graph_results))
+        span.set_attribute("total_search_results", search_results.total_results)
+        
+        # Log first semantic result content for debugging
+        if search_results.semantic_results:
+            first_result = search_results.semantic_results[0]
+            span.set_attribute("first_semantic_content_preview", first_result.content[:200])
+            span.set_attribute("first_semantic_score", first_result.score)
+            span.set_attribute("first_semantic_source", first_result.source)
+        
+        global context_builder_agent
+        if context_builder_agent is None:
+            context_builder_agent = create_context_builder_agent()
+        
+        with logfire.span("context_agent_run"):
+            # Pass the actual data, not just the dictionary
+            result = await context_builder_agent.run(
+                f"Query: {query}\n\n" +
+                f"Keyword Results ({len(search_results.keyword_results)}):\n" +
+                "\n".join([f"- {r.content} (score: {r.score}, source: {r.source})" for r in search_results.keyword_results[:3]]) +
+                f"\n\nSemantic Results ({len(search_results.semantic_results)}):\n" +
+                "\n".join([f"- {r.content} (score: {r.score}, source: {r.source})" for r in search_results.semantic_results[:3]]) +
+                f"\n\nGraph Results ({len(search_results.graph_results)}):\n" +
+                "\n".join([f"- {r.content} (score: {r.score}, source: {r.source})" for r in search_results.graph_results[:3]]) +
+                f"\n\nMax tokens: {max_tokens}"
+            )
+            context_data = result.data
+        
+        span.set_attribute("context_items_count", len(context_data.items))
+        span.set_attribute("context_total_tokens", context_data.total_tokens)
+        span.set_attribute("context_sources_count", len(context_data.sources))
+        
+        # Log first context item for debugging
+        if context_data.items:
+            first_item = context_data.items[0]
+            span.set_attribute("first_context_content_preview", first_item.content[:200])
+            span.set_attribute("first_context_relevance", first_item.relevance)
+            span.set_attribute("first_context_type", first_item.type)
     
-    result = await context_builder_agent.run(agent_input)
-    return result.data
+    return context_data
 
 
 def merge_search_results(search_results: SearchResults) -> list[ContextItem]:

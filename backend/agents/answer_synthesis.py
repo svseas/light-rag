@@ -96,7 +96,17 @@ async def synthesize_answer(query: str, context: QueryContext) -> QueryResponse:
     if answer_synthesis_agent is None:
         answer_synthesis_agent = create_answer_synthesis_agent()
     
-    result = await answer_synthesis_agent.run(agent_input)
+    # Pass the actual data, not just the dictionary structure
+    result = await answer_synthesis_agent.run(
+        f"Query: {query}\n\n" +
+        f"Context Items ({len(context.items)}):\n" +
+        "\n".join([
+            f"- {item.content}\n  [Source: {item.source}, Relevance: {item.relevance}, Type: {item.type}]"
+            for item in context.items
+        ]) +
+        f"\n\nTotal Context Tokens: {context.total_tokens}\n" +
+        f"Available Sources: {', '.join(context.sources)}"
+    )
     return result.data
 
 
