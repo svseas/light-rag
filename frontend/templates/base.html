@@ -25,6 +25,7 @@
         <div class="loading-spinner">
             <div class="spinner"></div>
             <p>Loading...</p>
+            <p class="loading-hint">Click anywhere or press ESC to dismiss if loading takes too long</p>
         </div>
     </div>
 
@@ -59,13 +60,76 @@
             }
         });
 
-        // Show loading indicator
-        document.addEventListener('htmx:beforeRequest', () => {
-            document.getElementById('loading-overlay').style.display = 'flex';
+        // Show loading indicator only for non-chat requests
+        document.addEventListener('htmx:beforeRequest', (event) => {
+            // Don't show loading overlay for chat requests or API calls
+            const url = event.detail.requestConfig?.path || event.detail.xhr?.responseURL || '';
+            if (!url.includes('/queries/process') && !url.includes('/api/')) {
+                document.getElementById('loading-overlay').style.display = 'flex';
+            }
         });
 
-        document.addEventListener('htmx:afterRequest', () => {
+        document.addEventListener('htmx:afterRequest', (event) => {
+            // Always hide loading overlay after request
             document.getElementById('loading-overlay').style.display = 'none';
+        });
+
+        // Additional event handlers for better loading overlay control
+        document.addEventListener('htmx:timeout', (event) => {
+            document.getElementById('loading-overlay').style.display = 'none';
+        });
+
+        document.addEventListener('htmx:responseError', (event) => {
+            document.getElementById('loading-overlay').style.display = 'none';
+        });
+
+        document.addEventListener('htmx:sendError', (event) => {
+            document.getElementById('loading-overlay').style.display = 'none';
+        });
+
+        // Failsafe: Hide loading overlay after 10 seconds
+        let loadingTimeout;
+        document.addEventListener('htmx:beforeRequest', (event) => {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }, 10000);
+        });
+
+        document.addEventListener('htmx:afterRequest', (event) => {
+            clearTimeout(loadingTimeout);
+        });
+
+        // Emergency escape: Allow users to click the overlay to dismiss it
+        document.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        // Use LoadingManager's forceHide if available, otherwise direct hide
+                        if (typeof loadingManager !== 'undefined' && loadingManager.forceHide) {
+                            loadingManager.forceHide();
+                        } else {
+                            overlay.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        });
+
+        // Keyboard shortcut: ESC key to dismiss loading overlay
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay && overlay.style.display === 'flex') {
+                    // Use LoadingManager's forceHide if available, otherwise direct hide
+                    if (typeof loadingManager !== 'undefined' && loadingManager.forceHide) {
+                        loadingManager.forceHide();
+                    } else {
+                        overlay.style.display = 'none';
+                    }
+                }
+            }
         });
     </script>
 </body>

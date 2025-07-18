@@ -236,6 +236,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize chat
         initializeChat();
         
+        // Load chat history
+        loadChatHistory();
+        
         // Initialize tabs (with delay to ensure DOM is ready)
         setTimeout(() => {
             initializeTabs();
@@ -576,36 +579,122 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function sendMessage() {
         const input = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
         const message = input.value.trim();
         
         if (!message) return;
         
+        // Check if user has documents
+        if (!appState.documents || appState.documents.length === 0) {
+            addChatMessage('Please upload some documents first before asking questions.', 'bot');
+            showToast('No documents found. Upload documents to get started.', 'warning');
+            return;
+        }
+        
         // Add user message to chat
         addChatMessage(message, 'user');
         
-        // Clear input
+        // Clear input and disable send button
         input.value = '';
         input.style.height = 'auto';
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<span>...</span>';
         
-        // Show thinking
-        setStatus('Processing', 'processing');
+        // Show thinking indicator
+        setStatus('Processing query...', 'processing');
+        
+        // Add a "thinking" message
+        const thinkingMessage = addChatMessage('Processing your question...', 'bot', { isThinking: true });
+        
+        // Show processing indicator in thinking panel
+        updateThinkingPanelProcessing();
         
         try {
-            // Send to backend (placeholder for now)
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Get user ID from authentication
+            const profile = await window.AuthManager.getProfile();
+            const userId = profile?.uid || 'anonymous';
             
-            // Add bot response
-            addChatMessage('I understand your question. However, the chat functionality is not fully implemented yet. Please check back later!', 'bot');
+            // Prepare query request
+            const queryRequest = {
+                query: message,
+                user_id: userId,
+                project_id: appState.project?.id || null,
+                max_results: 10,
+                include_sources: true
+            };
+            
+            console.log('Sending query request:', queryRequest);
+            
+            // Send to backend queries/process endpoint
+            const response = await API.post('/queries/process', queryRequest);
+            
+            console.log('Query response:', response);
+            
+            // Remove thinking message
+            if (thinkingMessage) {
+                thinkingMessage.remove();
+            }
+            
+            // Validate response
+            if (!response.answer) {
+                throw new Error('No answer received from the server');
+            }
+            
+            // Add bot response with streaming effect
+            await streamBotResponse(response.answer, {
+                sources: response.sources,
+                confidence: response.confidence,
+                processingTime: response.processing_time,
+                metadata: response.metadata
+            });
+            
+            // Update thinking panel with metadata
+            console.log('About to update thinking panel with response:', response);
+            updateThinkingPanel(response.metadata);
+            
+            // Save to local conversation history
+            saveChatHistoryLocally(message, response);
             
         } catch (error) {
             console.error('Chat error:', error);
-            addChatMessage('Sorry, I encountered an error. Please try again.', 'bot');
+            
+            // Remove thinking message if it exists
+            if (thinkingMessage) {
+                thinkingMessage.remove();
+            }
+            
+            let errorMessage = 'Sorry, I encountered an error processing your query. Please try again.';
+            let toastMessage = 'Query failed';
+            
+            // Handle specific error types
+            if (error.message.includes('404')) {
+                errorMessage = 'The query service is not available. Please check if your documents are properly processed.';
+                toastMessage = 'Query service not available';
+            } else if (error.message.includes('401')) {
+                errorMessage = 'Authentication error. Please refresh the page and try again.';
+                toastMessage = 'Authentication error';
+            } else if (error.message.includes('timeout')) {
+                errorMessage = 'Query took too long to process. Please try a simpler question.';
+                toastMessage = 'Query timeout';
+            } else if (error.message.includes('No answer')) {
+                errorMessage = 'I was unable to generate an answer. Please try rephrasing your question.';
+                toastMessage = 'No answer generated';
+            }
+            
+            addChatMessage(errorMessage, 'bot');
+            showToast(`${toastMessage}: ${error.message}`, 'error');
+            
+            // Reset thinking panel on error
+            resetThinkingPanel();
         } finally {
+            // Re-enable send button
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<span>▶</span>';
             setStatus('Ready', 'idle');
         }
     }
     
-    function addChatMessage(message, sender) {
+    function addChatMessage(message, sender, metadata = {}) {
         const chatWindow = document.getElementById('chatWindow');
         const emptyState = chatWindow.querySelector('.empty-state');
         
@@ -615,13 +704,190 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const messageElement = document.createElement('div');
         messageElement.className = `chat-message ${sender}`;
-        messageElement.innerHTML = `
-            <div class="message-content">${Utils.escapeHtml(message)}</div>
+        
+        // Add thinking class for loading messages
+        if (metadata.isThinking) {
+            messageElement.classList.add('thinking');
+        }
+        
+        let messageHtml = `
+            <div class="message-content">${sender === 'bot' && !metadata.isThinking ? formatBotMessage(message) : Utils.escapeHtml(message)}</div>
             <div class="message-time">${new Date().toLocaleTimeString()}</div>
         `;
         
+        // Add sources and metadata for bot responses
+        if (sender === 'bot' && metadata && !metadata.isThinking) {
+            if (metadata.sources && metadata.sources.length > 0) {
+                messageHtml += `
+                    <div class="message-sources">
+                        <div class="sources-header">Sources:</div>
+                        <div class="sources-list">
+                            ${metadata.sources.map(source => {
+                                // Format source name - if it's a document name, show it nicely
+                                let displayName = source;
+                                if (source === 'unknown' || !source) {
+                                    displayName = 'Document';
+                                } else if (source.includes('.')) {
+                                    // If it's a filename, remove extension for display
+                                    displayName = source.split('.').slice(0, -1).join('.');
+                                }
+                                return `<div class="source-item">${Utils.escapeHtml(displayName)}</div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (metadata.confidence !== undefined) {
+                const confidencePercent = Math.round(metadata.confidence * 100);
+                messageHtml += `
+                    <div class="message-metadata">
+                        <span class="confidence-badge confidence-${confidencePercent >= 80 ? 'high' : confidencePercent >= 60 ? 'medium' : 'low'}">
+                            ${confidencePercent}% confidence
+                        </span>
+                        ${metadata.processingTime ? `
+                            <span class="processing-time">
+                                ${metadata.processingTime.toFixed(2)}s
+                            </span>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        }
+        
+        messageElement.innerHTML = messageHtml;
+        
         chatWindow.appendChild(messageElement);
         chatWindow.scrollTop = chatWindow.scrollHeight;
+        
+        return messageElement;
+    }
+    
+    function formatBotMessage(message) {
+        // Convert plain text to HTML with proper formatting
+        let formatted = Utils.escapeHtml(message);
+        
+        // Convert bullet points (- item) to HTML list items
+        formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
+        
+        // Wrap consecutive list items in <ul> tags
+        formatted = formatted.replace(/(<li>.*<\/li>)/gs, (match) => {
+            return `<ul>${match}</ul>`;
+        });
+        
+        // Convert numbered lists (1. item) to HTML ordered lists
+        formatted = formatted.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+        
+        // Convert line breaks to <br> tags
+        formatted = formatted.replace(/\n/g, '<br>');
+        
+        // Convert double line breaks to paragraph breaks
+        formatted = formatted.replace(/<br><br>/g, '</p><p>');
+        
+        // Wrap in paragraph tags if not already wrapped
+        if (!formatted.includes('<p>') && !formatted.includes('<ul>') && !formatted.includes('<ol>')) {
+            formatted = `<p>${formatted}</p>`;
+        } else if (formatted.includes('<br>')) {
+            formatted = `<p>${formatted}</p>`;
+        }
+        
+        // Bold text formatting (**text** -> <strong>text</strong>)
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Italic text formatting (*text* -> <em>text</em>)
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        return formatted;
+    }
+    
+    async function streamBotResponse(fullMessage, metadata) {
+        const chatWindow = document.getElementById('chatWindow');
+        const emptyState = chatWindow.querySelector('.empty-state');
+        
+        if (emptyState) {
+            emptyState.remove();
+        }
+        
+        // Create message element
+        const messageElement = document.createElement('div');
+        messageElement.className = 'chat-message bot streaming';
+        
+        // Create content div for streaming
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        timeDiv.textContent = new Date().toLocaleTimeString();
+        
+        messageElement.appendChild(contentDiv);
+        messageElement.appendChild(timeDiv);
+        
+        chatWindow.appendChild(messageElement);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        
+        // Stream the text character by character
+        const words = fullMessage.split(' ');
+        let currentText = '';
+        
+        for (let i = 0; i < words.length; i++) {
+            currentText += (i > 0 ? ' ' : '') + words[i];
+            
+            // Format and update content
+            contentDiv.innerHTML = formatBotMessage(currentText);
+            
+            // Scroll to bottom
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            
+            // Wait a bit before next word (adjust speed here)
+            await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
+        }
+        
+        // Remove streaming class
+        messageElement.classList.remove('streaming');
+        
+        // Add sources and metadata after streaming is complete
+        if (metadata.sources && metadata.sources.length > 0) {
+            const sourcesDiv = document.createElement('div');
+            sourcesDiv.className = 'message-sources';
+            sourcesDiv.innerHTML = `
+                <div class="sources-header">Sources:</div>
+                <div class="sources-list">
+                    ${metadata.sources.map(source => {
+                        let displayName = source;
+                        if (source === 'unknown' || !source) {
+                            displayName = 'Document';
+                        } else if (source.includes('.')) {
+                            displayName = source.split('.').slice(0, -1).join('.');
+                        }
+                        return `<div class="source-item">${Utils.escapeHtml(displayName)}</div>`;
+                    }).join('')}
+                </div>
+            `;
+            messageElement.appendChild(sourcesDiv);
+        }
+        
+        if (metadata.confidence !== undefined) {
+            const confidencePercent = Math.round(metadata.confidence * 100);
+            const metadataDiv = document.createElement('div');
+            metadataDiv.className = 'message-metadata';
+            metadataDiv.innerHTML = `
+                <span class="confidence-badge confidence-${confidencePercent >= 80 ? 'high' : confidencePercent >= 60 ? 'medium' : 'low'}">
+                    ${confidencePercent}% confidence
+                </span>
+                ${metadata.processingTime ? `
+                    <span class="processing-time">
+                        ${metadata.processingTime.toFixed(2)}s
+                    </span>
+                ` : ''}
+            `;
+            messageElement.appendChild(metadataDiv);
+        }
+        
+        // Final scroll to bottom
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        
+        return messageElement;
     }
     
     function clearChat() {
@@ -630,6 +896,330 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="empty-state">
                 <div class="empty-state-icon">💬</div>
                 <div class="empty-state-text">Start a conversation by asking a question about your documents.</div>
+            </div>
+        `;
+        
+        // Also clear thinking panel
+        resetThinkingPanel();
+        
+        // Clear local history for this session
+        clearLocalChatHistory();
+    }
+    
+    function saveChatHistoryLocally(userMessage, response) {
+        try {
+            const history = getLocalChatHistory();
+            const newEntry = {
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                userMessage: userMessage,
+                botResponse: response.answer,
+                sources: response.sources,
+                confidence: response.confidence,
+                processingTime: response.processing_time,
+                metadata: response.metadata
+            };
+            
+            history.push(newEntry);
+            
+            // Keep only last 50 conversations
+            if (history.length > 50) {
+                history.splice(0, history.length - 50);
+            }
+            
+            localStorage.setItem('lightrag_chat_history', JSON.stringify(history));
+            console.log('Chat history saved locally');
+        } catch (error) {
+            console.error('Failed to save chat history:', error);
+        }
+    }
+    
+    function getLocalChatHistory() {
+        try {
+            const history = localStorage.getItem('lightrag_chat_history');
+            return history ? JSON.parse(history) : [];
+        } catch (error) {
+            console.error('Failed to get chat history:', error);
+            return [];
+        }
+    }
+    
+    function clearLocalChatHistory() {
+        try {
+            localStorage.removeItem('lightrag_chat_history');
+            console.log('Chat history cleared');
+        } catch (error) {
+            console.error('Failed to clear chat history:', error);
+        }
+    }
+    
+    function loadChatHistory() {
+        try {
+            const history = getLocalChatHistory();
+            const chatWindow = document.getElementById('chatWindow');
+            
+            if (history.length === 0) return;
+            
+            // Clear empty state
+            const emptyState = chatWindow.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            // Add historical messages
+            history.forEach(entry => {
+                addChatMessage(entry.userMessage, 'user');
+                addChatMessage(entry.botResponse, 'bot', {
+                    sources: entry.sources,
+                    confidence: entry.confidence,
+                    processingTime: entry.processingTime,
+                    metadata: entry.metadata
+                });
+            });
+            
+            console.log(`Loaded ${history.length} chat history entries`);
+        } catch (error) {
+            console.error('Failed to load chat history:', error);
+        }
+    }
+    
+    function updateThinkingPanelProcessing() {
+        // Show processing state in thinking panel
+        const contextTab = document.getElementById('contextTab');
+        const entitiesMatchTab = document.getElementById('entitiesMatchTab');
+        const reasoningTab = document.getElementById('reasoningTab');
+        
+        if (contextTab) {
+            contextTab.innerHTML = `
+                <div class="processing-indicator">
+                    <div class="spinner-small"></div>
+                    <div class="processing-text">Searching and ranking documents...</div>
+                </div>
+            `;
+        }
+        
+        if (entitiesMatchTab) {
+            entitiesMatchTab.innerHTML = `
+                <div class="processing-indicator">
+                    <div class="spinner-small"></div>
+                    <div class="processing-text">Extracting entities from query...</div>
+                </div>
+            `;
+        }
+        
+        if (reasoningTab) {
+            reasoningTab.innerHTML = `
+                <div class="processing-indicator">
+                    <div class="spinner-small"></div>
+                    <div class="processing-text">Decomposing and expanding query...</div>
+                </div>
+            `;
+        }
+    }
+    
+    function updateThinkingPanel(metadata) {
+        if (!metadata) return;
+        
+        console.log('Updating thinking panel with metadata:', metadata);
+        
+        // Test if the tab exists
+        const contextTab = document.getElementById('contextTab');
+        console.log('contextTab element:', contextTab);
+        
+        // Update context tab with actual metadata structure
+        if (contextTab) {
+            let contextHtml = '';
+            
+            // Show search optimization info
+            if (metadata.search_optimization) {
+                const searchOpt = metadata.search_optimization;
+                contextHtml += `
+                    <div class="context-summary">
+                        <div class="context-stats">
+                            <span>Search Results: ${searchOpt.original_results?.total_count || 0}</span>
+                            <span>Reranked: ${searchOpt.reranked_count || 0}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Show breakdown of results
+                if (searchOpt.original_results) {
+                    contextHtml += `
+                        <div class="search-breakdown">
+                            <div class="search-type">Keyword: ${searchOpt.original_results.keyword_count}</div>
+                            <div class="search-type">Semantic: ${searchOpt.original_results.semantic_count}</div>
+                            <div class="search-type">Graph: ${searchOpt.original_results.graph_count}</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Show context information
+            if (metadata.context_items !== undefined) {
+                contextHtml += `
+                    <div class="context-info">
+                        <div class="context-stat">Context Items: ${metadata.context_items}</div>
+                        <div class="context-stat">Context Tokens: ${metadata.context_tokens}</div>
+                        <div class="context-stat">Sources: ${metadata.source_count}</div>
+                        <div class="context-stat">Avg Relevance: ${Math.round((metadata.avg_relevance || 0) * 100)}%</div>
+                    </div>
+                `;
+            }
+            
+            // Show adaptive context info
+            if (metadata.adaptive_context) {
+                const adaptive = metadata.adaptive_context;
+                contextHtml += `
+                    <div class="adaptive-context">
+                        <div class="adaptive-title">Adaptive Context</div>
+                        <div class="adaptive-stat">Complexity: ${adaptive.complexity_level}</div>
+                        <div class="adaptive-stat">Recommended Tokens: ${adaptive.recommended_tokens}</div>
+                        <div class="adaptive-stat">Actual Tokens: ${adaptive.actual_tokens}</div>
+                        ${adaptive.reasoning ? `<div class="adaptive-reasoning">${Utils.escapeHtml(adaptive.reasoning)}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            contextTab.innerHTML = contextHtml || `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🧠</div>
+                    <div class="empty-state-text">No context information available.</div>
+                </div>
+            `;
+        }
+        
+        // Update entities tab with decomposition info
+        const entitiesMatchTab = document.getElementById('entitiesMatchTab');
+        if (entitiesMatchTab) {
+            let entitiesHtml = '';
+            
+            // Show decomposition entities
+            if (metadata.decomposition?.entities && metadata.decomposition.entities.length > 0) {
+                entitiesHtml += `
+                    <div class="entities-summary">
+                        Found ${metadata.decomposition.entities.length} entities in query
+                    </div>
+                    <div class="matched-entities">
+                        ${metadata.decomposition.entities.map(entity => `
+                            <div class="matched-entity">
+                                <div class="entity-name">${Utils.escapeHtml(entity)}</div>
+                                <div class="entity-type">Query Entity</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Show conversation context entities
+            if (metadata.conversation_context?.extracted_entities && metadata.conversation_context.extracted_entities.length > 0) {
+                entitiesHtml += `
+                    <div class="entities-summary">
+                        Conversation entities: ${metadata.conversation_context.extracted_entities.length}
+                    </div>
+                    <div class="matched-entities">
+                        ${metadata.conversation_context.extracted_entities.map(entity => `
+                            <div class="matched-entity">
+                                <div class="entity-name">${Utils.escapeHtml(entity)}</div>
+                                <div class="entity-type">Conversation Entity</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            entitiesMatchTab.innerHTML = entitiesHtml || `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎯</div>
+                    <div class="empty-state-text">No entities found in query or conversation.</div>
+                </div>
+            `;
+        }
+        
+        // Update reasoning tab with processing pipeline info
+        const reasoningTab = document.getElementById('reasoningTab');
+        if (reasoningTab) {
+            let reasoningHtml = '';
+            
+            // Show query decomposition
+            if (metadata.decomposition) {
+                reasoningHtml += `
+                    <div class="reasoning-section">
+                        <div class="reasoning-title">Query Decomposition</div>
+                        <div class="reasoning-item">Intent: ${Utils.escapeHtml(metadata.decomposition.intent)}</div>
+                        ${metadata.decomposition.sub_queries.length > 0 ? `
+                            <div class="reasoning-item">Sub-queries: ${metadata.decomposition.sub_queries.length}</div>
+                            <div class="sub-queries">
+                                ${metadata.decomposition.sub_queries.map(sq => `
+                                    <div class="sub-query">• ${Utils.escapeHtml(sq)}</div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Show query expansion
+            if (metadata.expansion) {
+                reasoningHtml += `
+                    <div class="reasoning-section">
+                        <div class="reasoning-title">Query Expansion</div>
+                        ${metadata.expansion.expanded_terms.length > 0 ? `
+                            <div class="reasoning-item">Expanded terms: ${metadata.expansion.expanded_terms.join(', ')}</div>
+                        ` : ''}
+                        ${metadata.expansion.synonyms.length > 0 ? `
+                            <div class="reasoning-item">Synonyms: ${metadata.expansion.synonyms.join(', ')}</div>
+                        ` : ''}
+                        ${metadata.expansion.related_concepts.length > 0 ? `
+                            <div class="reasoning-item">Related concepts: ${metadata.expansion.related_concepts.join(', ')}</div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Show conversation context if available
+            if (metadata.conversation_context && metadata.conversation_context.original_query) {
+                reasoningHtml += `
+                    <div class="reasoning-section">
+                        <div class="reasoning-title">Conversation Context</div>
+                        <div class="reasoning-item">Original query: ${Utils.escapeHtml(metadata.conversation_context.original_query)}</div>
+                        ${metadata.conversation_context.expanded_query ? `
+                            <div class="reasoning-item">Expanded query: ${Utils.escapeHtml(metadata.conversation_context.expanded_query)}</div>
+                        ` : ''}
+                        ${metadata.conversation_context.recent_queries_count > 0 ? `
+                            <div class="reasoning-item">Recent queries: ${metadata.conversation_context.recent_queries_count}</div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            reasoningTab.innerHTML = reasoningHtml || `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🤔</div>
+                    <div class="empty-state-text">No reasoning information available.</div>
+                </div>
+            `;
+        }
+    }
+    
+    function resetThinkingPanel() {
+        document.getElementById('contextTab').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🧠</div>
+                <div class="empty-state-text">Retrieved context will appear here when you ask a question.</div>
+            </div>
+        `;
+        
+        document.getElementById('entitiesMatchTab').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🎯</div>
+                <div class="empty-state-text">Matched entities will appear here.</div>
+            </div>
+        `;
+        
+        document.getElementById('reasoningTab').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🤔</div>
+                <div class="empty-state-text">Reasoning trace will appear here.</div>
             </div>
         `;
     }
@@ -924,6 +1514,27 @@ document.addEventListener('DOMContentLoaded', function() {
         // Start monitoring
         setTimeout(checkProgress, 2000);
     }
+    
+    // Debug function to test thinking panel
+    window.testThinkingPanel = function() {
+        console.log('Testing thinking panel...');
+        const testMetadata = {
+            search_optimization: {
+                original_results: { total_count: 50, keyword_count: 10, semantic_count: 35, graph_count: 5 },
+                reranked_count: 20
+            },
+            context_items: 5,
+            context_tokens: 1200,
+            source_count: 3,
+            avg_relevance: 0.75,
+            decomposition: {
+                intent: "information_seeking",
+                entities: ["travel", "content creator"],
+                sub_queries: ["How to build travel brand", "Content creation strategies"]
+            }
+        };
+        updateThinkingPanel(testMetadata);
+    };
     
     // Global functions for document actions
     window.selectDocument = function(docId) {

@@ -136,7 +136,8 @@ async def search_endpoint(
         HTTPException: If search fails.
     """
     try:
-        results = await service.search_service.search_all(query, limit)
+        k_values = {"keyword_k": limit, "semantic_k": limit, "graph_k": limit}
+        results = await service.search_service.search_all(query, k_values)
         return results.model_dump()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")

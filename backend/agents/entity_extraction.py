@@ -75,7 +75,6 @@ Return entities with their types, confidence scores, and relevant metadata.
         
         result = await self.agent.run(
             prompt,
-            model=self.settings.default_model,
         )
         
         # Extract the result data

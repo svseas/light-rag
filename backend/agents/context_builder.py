@@ -35,6 +35,12 @@ Selection Criteria:
 - Diverse source coverage
 - Balanced information types
 - Total token count within limits
+
+Reranking Score Priority:
+- Cross-encoder scores indicate semantic relevance to the query
+- RRF scores indicate consensus across multiple search strategies
+- Original scores show initial retrieval confidence
+- Prefer results with higher cross-encoder scores for better query relevance
 """
 
 
@@ -87,7 +93,10 @@ async def build_context(query: str, search_results: SearchResults,
                 "content": result.content,
                 "source": result.source,
                 "score": result.score,
-                "type": result.metadata.get("type", "text")
+                "type": result.metadata.get("type", "text"),
+                "cross_encoder_score": result.metadata.get("cross_encoder_score"),
+                "rrf_score": result.metadata.get("rrf_score"),
+                "original_score": result.metadata.get("original_score")
             }
             for result in search_results.keyword_results
         ],
@@ -134,11 +143,16 @@ async def build_context(query: str, search_results: SearchResults,
             result = await context_builder_agent.run(
                 f"Query: {query}\n\n" +
                 f"Keyword Results ({len(search_results.keyword_results)}):\n" +
-                "\n".join([f"- {r.content} (score: {r.score}, source: {r.source})" for r in search_results.keyword_results[:3]]) +
+                "\n".join([
+                    f"- {r.content[:100]}... (score: {r.score:.3f}, source: {r.source})" +
+                    (f", cross_encoder: {r.metadata.get('cross_encoder_score', 'N/A'):.3f}" if r.metadata.get('cross_encoder_score') else "") +
+                    (f", rrf: {r.metadata.get('rrf_score', 'N/A'):.3f}" if r.metadata.get('rrf_score') else "")
+                    for r in search_results.keyword_results[:5]
+                ]) +
                 f"\n\nSemantic Results ({len(search_results.semantic_results)}):\n" +
-                "\n".join([f"- {r.content} (score: {r.score}, source: {r.source})" for r in search_results.semantic_results[:3]]) +
+                "\n".join([f"- {r.content[:100]}... (score: {r.score:.3f}, source: {r.source})" for r in search_results.semantic_results[:3]]) +
                 f"\n\nGraph Results ({len(search_results.graph_results)}):\n" +
-                "\n".join([f"- {r.content} (score: {r.score}, source: {r.source})" for r in search_results.graph_results[:3]]) +
+                "\n".join([f"- {r.content[:100]}... (score: {r.score:.3f}, source: {r.source})" for r in search_results.graph_results[:3]]) +
                 f"\n\nMax tokens: {max_tokens}"
             )
             context_data = result.data

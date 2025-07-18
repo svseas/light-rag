@@ -224,11 +224,20 @@ class LoadingManager {
     constructor() {
         this.overlay = document.getElementById('loading-overlay');
         this.activeRequests = new Set();
+        this.requestTimers = new Map(); // Track request timers for cleanup
     }
 
     show(requestId = null) {
         if (requestId) {
             this.activeRequests.add(requestId);
+            
+            // Set a timer to automatically clean up stuck requests after 30 seconds
+            const timer = setTimeout(() => {
+                console.warn(`Request ${requestId} timed out, removing from active requests`);
+                this.hide(requestId);
+            }, 30000);
+            
+            this.requestTimers.set(requestId, timer);
         }
         
         if (this.overlay) {
@@ -241,6 +250,12 @@ class LoadingManager {
     hide(requestId = null) {
         if (requestId) {
             this.activeRequests.delete(requestId);
+            
+            // Clear the timer for this request
+            if (this.requestTimers.has(requestId)) {
+                clearTimeout(this.requestTimers.get(requestId));
+                this.requestTimers.delete(requestId);
+            }
         }
         
         // Only hide if no active requests
@@ -255,10 +270,40 @@ class LoadingManager {
     isLoading() {
         return this.activeRequests.size > 0;
     }
+
+    // Force clear all active requests and hide overlay
+    forceHide() {
+        // Clear all timers
+        this.requestTimers.forEach(timer => clearTimeout(timer));
+        this.requestTimers.clear();
+        
+        this.activeRequests.clear();
+        if (this.overlay) {
+            this.overlay.style.display = 'none';
+        }
+        appState.setState({ isProcessing: false });
+    }
 }
 
 // Global loading manager
 const loadingManager = new LoadingManager();
+
+// Debug function - expose to console for troubleshooting
+window.debugLoadingManager = () => {
+    console.log('Loading Manager Debug Info:');
+    console.log('- Active requests:', loadingManager.activeRequests.size);
+    console.log('- Active request IDs:', Array.from(loadingManager.activeRequests));
+    console.log('- Active timers:', loadingManager.requestTimers.size);
+    console.log('- Overlay visible:', loadingManager.overlay?.style.display === 'flex');
+    console.log('- App state processing:', appState.isProcessing);
+    
+    return {
+        activeRequests: Array.from(loadingManager.activeRequests),
+        activeTimers: loadingManager.requestTimers.size,
+        overlayVisible: loadingManager.overlay?.style.display === 'flex',
+        forceHide: () => loadingManager.forceHide()
+    };
+};
 
 // API helper functions
 const API = {

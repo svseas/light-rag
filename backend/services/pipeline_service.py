@@ -285,8 +285,8 @@ class PipelineService:
             from backend.models.chunks import ChunkingRequest
             request = ChunkingRequest(
                 doc_id=document_id,
-                chunk_size=1000,
-                chunk_overlap=200
+                chunk_size=1024,
+                # No chunk_overlap parameter to trigger SemanticChunker
             )
             await chunking_service.create_chunks_for_document(document_id, doc.content_md, request)
             

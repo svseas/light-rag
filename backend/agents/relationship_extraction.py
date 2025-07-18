@@ -71,7 +71,7 @@ IMPORTANT: Your response must use the exact entity IDs provided above.
         if relationship_types:
             prompt += f"\nFocus on these relationship types: {', '.join(rt.value for rt in relationship_types)}"
         
-        result = await self.agent.run(prompt, model=self.settings.default_model)
+        result = await self.agent.run(prompt)
         extraction_result = result.data
         
         # Validate that relationships use valid entity IDs

@@ -94,7 +94,6 @@ class DocumentProcessorAgent:
                 result = await self.agent.run(
                     f"Process this markdown content: {content_md[:1000]}...",
                     deps=deps,
-                    model=self.settings.default_model,
                 )
                 
                 # Update result with actual content

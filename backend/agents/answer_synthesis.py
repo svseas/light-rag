@@ -33,6 +33,14 @@ Response Quality Standards:
 - Citations: Reference sources for all major claims
 - Confidence: Indicate certainty level honestly
 
+Topic Hierarchy and Importance:
+- MAJOR TOPICS: Themes that appear across multiple context items or dominate the content
+- MINOR MENTIONS: Single, brief references that don't represent main themes
+- Weight topics by frequency, coverage, and document focus
+- Present major topics prominently and minor mentions as supporting details
+- Don't elevate minor mentions to equal importance with major themes
+- Consider document titles and overall context when determining topic importance
+
 Citation Format:
 - Use [Source: document_id] after claims
 - Group related information from same source
@@ -42,6 +50,14 @@ When Information is Insufficient:
 - Clearly state what cannot be answered
 - Suggest what additional information would be helpful
 - Provide partial answers when some aspects can be addressed
+
+Topic Analysis Instructions:
+When analyzing content, consider:
+1. How many context items discuss each topic
+2. How much space/content is devoted to each topic
+3. Whether topics appear in document titles or headers
+4. The primary focus vs. incidental mentions
+5. Related concepts that support main themes
 """
 
 

@@ -279,19 +279,41 @@ class EmbeddingGenerationService:
         for content_type in content_types:
             table, text_column = self._get_table_info(content_type)
             
-            where_clause = "WHERE embedding IS NOT NULL"
             params = [embedding_str]
             
-            if request.doc_id:
-                where_clause += " AND doc_id = $2"
-                params.append(request.doc_id)
-            
-            query = f"""
-                SELECT id, {text_column} as content, 1 - (embedding <-> $1::vector) as similarity
-                FROM {table} {where_clause}
-                ORDER BY embedding <-> $1::vector
-                LIMIT {request.limit}
-            """
+            # Join with documents table to get document names for proper source attribution
+            if content_type == EmbeddingType.CHUNK:
+                if request.doc_id:
+                    where_clause = "WHERE c.embedding IS NOT NULL AND c.doc_id = $2"
+                    params.append(request.doc_id)
+                else:
+                    where_clause = "WHERE c.embedding IS NOT NULL"
+                    
+                query = f"""
+                    SELECT c.id, c.{text_column} as content, 1 - (c.embedding <-> $1::vector) as similarity, d.name as doc_name
+                    FROM {table} c
+                    JOIN documents d ON c.doc_id = d.id
+                    {where_clause}
+                    ORDER BY c.embedding <-> $1::vector
+                    LIMIT {request.limit}
+                """
+            else:
+                # For entities, also join with documents through chunks
+                if request.doc_id:
+                    where_clause = "WHERE e.embedding IS NOT NULL AND c.doc_id = $2"
+                    params.append(request.doc_id)
+                else:
+                    where_clause = "WHERE e.embedding IS NOT NULL"
+                    
+                query = f"""
+                    SELECT e.id, e.{text_column} as content, 1 - (e.embedding <-> $1::vector) as similarity, d.name as doc_name
+                    FROM {table} e
+                    LEFT JOIN chunks c ON e.chunk_id = c.id
+                    LEFT JOIN documents d ON c.doc_id = d.id
+                    {where_clause}
+                    ORDER BY e.embedding <-> $1::vector
+                    LIMIT {request.limit}
+                """
             
             rows = await conn.fetch(query, *params)
             results.extend([self._create_similarity_result(content_type, row) for row in rows])
@@ -347,5 +369,6 @@ class EmbeddingGenerationService:
             content_type=content_type,
             content_id=row['id'],
             similarity_score=max(0.0, min(1.0, row['similarity'])),
-            content_preview=preview
+            content_preview=preview,
+            document_name=row.get('doc_name', None)
         )

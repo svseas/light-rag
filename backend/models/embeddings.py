@@ -62,6 +62,7 @@ class SimilarityResult(BaseModel):
     content_id: UUID = Field(..., description="ID of the similar content")
     similarity_score: float = Field(..., description="Similarity score (0.0 to 1.0)")
     content_preview: str | None = Field(None, description="Preview of the content")
+    document_name: str | None = Field(None, description="Name of the source document")
 
 
 class SimilaritySearchResponse(BaseModel):

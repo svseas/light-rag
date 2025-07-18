@@ -19,4 +19,5 @@ dependencies = [
     "orjson>=3.10.0",
     "google-generativeai>=0.8.5",
     "pydantic[email]>=2.11.7",
+    "sentence-transformers>=3.0.0",
 ]

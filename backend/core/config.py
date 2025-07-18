@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     allowed_hosts: str = "localhost,127.0.0.1"
     
     # PydanticAI Configuration
-    default_model: str = "anthropic/claude-3.5-sonnet"
+    default_model: str = "claude-3.5-sonnet"
     embedding_model: str = "gemini-embedding-001"
     
     # File Upload Configuration
