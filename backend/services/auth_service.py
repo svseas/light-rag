@@ -19,6 +19,9 @@ class AuthService:
         self.settings = get_settings()
         self.api_key = self.settings.firebase_api_key
         
+        if not self.api_key:
+            logger.warning("Firebase API key not configured. Authentication will not work.")
+        
     async def sign_up(self, request: AuthRequest) -> AuthResponse:
         """Create new user account."""
         try:
@@ -104,6 +107,12 @@ class AuthService:
     
     async def sign_in(self, request: AuthRequest) -> AuthResponse:
         """Sign in user."""
+        if not self.api_key:
+            return AuthResponse(
+                success=False,
+                message="Authentication service not configured"
+            )
+            
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
