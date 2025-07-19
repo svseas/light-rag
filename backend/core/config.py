@@ -12,33 +12,33 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # API Configuration
-    openrouter_api_key: str
-    logfire_token: str
+    openrouter_api_key: str = ""
+    logfire_token: str = ""
     
     # OpenAI Configuration (for PydanticAI with OpenRouter)
-    openai_api_key: str
-    openai_base_url: str
+    openai_api_key: str = ""
+    openai_base_url: str = "https://openrouter.ai/api/v1"
     
     # Google Gemini Configuration
-    google_api_key: str
+    google_api_key: str = ""
     
     # Firebase Authentication Configuration
-    firebase_api_key: str
-    firebase_auth_domain: str
-    firebase_project_id: str
-    firebase_storage_bucket: str
-    firebase_messaging_sender_id: str
-    firebase_app_id: str
-    firebase_measurement_id: str
-    firebase_private_key_id: str
-    firebase_private_key: str
-    firebase_client_email: str
-    firebase_client_id: str
-    firebase_auth_uri: str
-    firebase_token_uri: str
+    firebase_api_key: str = ""
+    firebase_auth_domain: str = ""
+    firebase_project_id: str = ""
+    firebase_storage_bucket: str = ""
+    firebase_messaging_sender_id: str = ""
+    firebase_app_id: str = ""
+    firebase_measurement_id: str = ""
+    firebase_private_key_id: str = ""
+    firebase_private_key: str = ""
+    firebase_client_email: str = ""
+    firebase_client_id: str = ""
+    firebase_auth_uri: str = "https://accounts.google.com/o/oauth2/auth"
+    firebase_token_uri: str = "https://oauth2.googleapis.com/token"
     
     # Database Configuration
-    database_url: str
+    database_url: str = ""
     postgres_user: str = "postgres"
     postgres_password: str = "postgres"
     postgres_db: str = "lightrag"
