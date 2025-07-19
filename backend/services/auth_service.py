@@ -14,13 +14,16 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """Firebase authentication service using REST API."""
     
-    def __init__(self, db_pool: asyncpg.Pool):
+    def __init__(self, db_pool: asyncpg.Pool | None):
         self.db_pool = db_pool
         self.settings = get_settings()
         self.api_key = self.settings.firebase_api_key
         
         if not self.api_key:
             logger.warning("Firebase API key not configured. Authentication will not work.")
+        
+        if not self.db_pool:
+            logger.warning("Database not configured. User persistence will not work.")
         
     async def sign_up(self, request: AuthRequest) -> AuthResponse:
         """Create new user account."""

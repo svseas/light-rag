@@ -49,8 +49,17 @@ async def sign_in(
     service: AuthService = Depends(get_auth_service)
 ) -> AuthResponse:
     """Sign in user."""
-    auth_request = AuthRequest(email=request["email"], password=request["password"])
-    return await service.sign_in(auth_request)
+    try:
+        auth_request = AuthRequest(email=request["email"], password=request["password"])
+        return await service.sign_in(auth_request)
+    except Exception as e:
+        # Log the error and return a proper JSON response
+        import logging
+        logging.error(f"Sign in error: {e}")
+        return AuthResponse(
+            success=False,
+            message="Authentication service temporarily unavailable"
+        )
 
 
 @router.post("/verify", response_model=User)

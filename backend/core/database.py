@@ -14,6 +14,9 @@ async def get_db_pool() -> asyncpg.Pool:
     if _db_pool is None:
         settings = get_settings()
         
+        if not settings.database_url:
+            raise RuntimeError("DATABASE_URL not configured")
+        
         with logfire.span("creating_db_pool"):
             _db_pool = await asyncpg.create_pool(
                 settings.database_url,

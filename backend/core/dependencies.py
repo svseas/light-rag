@@ -45,8 +45,14 @@ async def get_embedding_service() -> EmbeddingGenerationService:
 
 async def get_auth_service() -> AuthService:
     """Get authentication service dependency."""
-    db_pool = await get_db_pool()
-    return AuthService(db_pool)
+    try:
+        db_pool = await get_db_pool()
+        return AuthService(db_pool)
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to create auth service: {e}")
+        # Return a service with None pool - AuthService should handle this
+        return AuthService(None)
 
 
 async def get_project_service() -> ProjectService:
