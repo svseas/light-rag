@@ -5,7 +5,7 @@ from uuid import UUID
 import asyncpg
 import logfire
 
-from backend.agents.document_processor import document_processor
+from backend.agents.document_processor import get_document_processor
 from backend.core.config import get_settings
 from backend.models.documents import (
     Document,
@@ -23,8 +23,15 @@ class DocumentService:
     
     def __init__(self) -> None:
         """Initialize document service."""
-        self.processor = document_processor
+        self._processor = None
         self.settings = get_settings()
+    
+    @property
+    def processor(self):
+        """Get document processor instance."""
+        if self._processor is None:
+            self._processor = get_document_processor()
+        return self._processor
     
     async def _get_db_connection(self) -> asyncpg.Connection:
         """Get database connection."""

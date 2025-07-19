@@ -183,5 +183,12 @@ class DocumentProcessorAgent:
             )
 
 
-# Global instance
-document_processor = DocumentProcessorAgent()
+# Global instance - lazy loaded
+_document_processor = None
+
+def get_document_processor() -> DocumentProcessorAgent:
+    """Get the global document processor instance."""
+    global _document_processor
+    if _document_processor is None:
+        _document_processor = DocumentProcessorAgent()
+    return _document_processor
