@@ -12,7 +12,7 @@ import logfire
 
 from backend.core.config import configure_logfire, setup_directories
 from backend.models.documents import DocumentCreate
-from backend.services.document_service import document_service
+from backend.services.document_service import get_document_service
 
 
 async def test_document_upload():
@@ -53,7 +53,7 @@ async def test_document_upload():
         
         # Upload document
         with logfire.span("test_document_upload"):
-            result = await document_service.create_document(document_data)
+            result = await get_document_service().create_document(document_data)
             
             print(f"Document uploaded successfully!")
             print(f"Document ID: {result.document_id}")
@@ -65,7 +65,7 @@ async def test_document_upload():
             
             # Check processing status
             print("\nChecking processing status...")
-            processing = await document_service.get_processing_status(result.document_id)
+            processing = await get_document_service().get_processing_status(result.document_id)
             print(f"Status: {processing.status}")
             print(f"Progress: {processing.progress:.1%}")
             
@@ -75,7 +75,7 @@ async def test_document_upload():
             # Get document content
             if processing.status == "completed":
                 print("\nRetrieving processed document...")
-                document = await document_service.get_document(result.document_id)
+                document = await get_document_service().get_document(result.document_id)
                 
                 if document.content_md:
                     print(f"Content length: {len(document.content_md)} characters")

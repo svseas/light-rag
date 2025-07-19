@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_file: str = "./logs/app.log"
     
+    # Railway Configuration
+    railway_token: str = ""
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

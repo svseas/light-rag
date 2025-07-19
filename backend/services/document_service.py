@@ -582,4 +582,12 @@ class DocumentService:
                 )
 
 
-document_service = DocumentService()
+# Global instance - lazy loaded
+_document_service = None
+
+def get_document_service() -> DocumentService:
+    """Get the global document service instance."""
+    global _document_service
+    if _document_service is None:
+        _document_service = DocumentService()
+    return _document_service

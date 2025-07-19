@@ -17,7 +17,7 @@ from backend.models.documents import (
     DocumentResponse,
     DocumentUploadResponse,
 )
-from backend.services.document_service import document_service
+from backend.services.document_service import get_document_service
 from backend.services.project_service import ProjectService
 
 router = APIRouter()
@@ -56,7 +56,7 @@ async def upload_document(
             )
         
         # Check document limit (5 documents per project)
-        document_count = await document_service.count_documents_by_project(project.id)
+        document_count = await get_document_service().count_documents_by_project(project.id)
         if document_count >= 5:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -110,7 +110,7 @@ async def upload_document(
             )
             
             # Process document
-            result = await document_service.create_document(document_data)
+            result = await get_document_service().create_document(document_data)
             
             span.set_attribute("document_id", str(result.document_id))
             span.set_attribute("processing_status", result.processing_status)
@@ -184,7 +184,7 @@ async def list_documents(
             )
         
         try:
-            result = await document_service.list_documents_by_project(project.id, page, per_page)
+            result = await get_document_service().list_documents_by_project(project.id, page, per_page)
             return result
             
         except DocumentError as e:
@@ -211,7 +211,7 @@ async def get_document(document_id: UUID):
         span.set_attribute("document_id", str(document_id))
         
         try:
-            result = await document_service.get_document(document_id)
+            result = await get_document_service().get_document(document_id)
             return result
             
         except DocumentError as e:
@@ -244,7 +244,7 @@ async def get_processing_status(document_id: UUID):
         span.set_attribute("document_id", str(document_id))
         
         try:
-            result = await document_service.get_processing_status(document_id)
+            result = await get_document_service().get_processing_status(document_id)
             return result
             
         except DocumentError as e:
@@ -277,7 +277,7 @@ async def delete_document(document_id: UUID):
         span.set_attribute("document_id", str(document_id))
         
         try:
-            await document_service.delete_document(document_id)
+            await get_document_service().delete_document(document_id)
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
