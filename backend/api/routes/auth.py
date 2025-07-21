@@ -118,3 +118,22 @@ async def verify_email_token(
         return {"message": "Email verified successfully", "success": True}
     else:
         raise HTTPException(status_code=400, detail=result.message)
+
+
+@router.get("/check-user/{email}")
+async def check_user_exists(
+    email: str,
+    service: AuthService = Depends(get_auth_service)
+):
+    """Check if user exists in Firebase (debug endpoint)."""
+    try:
+        # Try to sign in with a dummy password to check if user exists
+        dummy_request = AuthRequest(email=email, password="dummy_password_123")
+        result = await service.sign_in(dummy_request)
+        
+        if "EMAIL_EXISTS" in str(result.message) or "INVALID_PASSWORD" in str(result.message):
+            return {"email": email, "exists": True, "message": "User exists"}
+        else:
+            return {"email": email, "exists": False, "message": "User does not exist"}
+    except Exception as e:
+        return {"email": email, "exists": "unknown", "error": str(e)}
