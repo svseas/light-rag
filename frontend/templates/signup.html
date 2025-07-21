@@ -351,14 +351,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert(errorMessage);
                 }
                 
-                // If email already exists, offer to go to verification page
+                // If email already exists, show option to go to login or verification
                 if (result.originalError === 'EMAIL_EXISTS') {
                     if (typeof showToast === 'function') {
-                        showToast('This email already has an account. Redirecting to verification page...', 'info');
+                        showToast('This email already has an account. Try signing in instead.', 'info');
                     }
+                    
+                    // Show a confirmation before redirecting
                     setTimeout(() => {
-                        window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
-                    }, 2000);
+                        if (confirm('This email already has an account. Would you like to go to the login page?')) {
+                            window.location.href = `/login?email=${encodeURIComponent(email)}`;
+                        }
+                    }, 1000);
                 }
             }
         } catch (error) {

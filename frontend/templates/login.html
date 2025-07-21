@@ -271,6 +271,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Pre-fill email from URL parameter (e.g., from signup redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    if (emailFromUrl && emailInput) {
+        emailInput.value = emailFromUrl;
+    }
+
     // Check if user is already logged in
     if (window.AuthManager.isAuthenticated()) {
         window.location.href = '/main';
