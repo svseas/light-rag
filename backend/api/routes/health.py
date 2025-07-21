@@ -12,7 +12,7 @@ async def health_check():
     Returns:
         Health status.
     """
-    return {"status": "healthy", "service": "light-rag", "version": "1.0.1"}
+    return {"status": "healthy", "service": "light-rag", "version": "1.0.2"}
 
 
 @router.get("/status")
