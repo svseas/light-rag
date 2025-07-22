@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# LightRAG Deployment CLI
+# Usage: ./deploy [command] [options]
+
+set -e
+
+# Change to project root directory
+cd "$(dirname "$0")"
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+print_header() {
+    echo -e "${BLUE}"
+    echo "  _     _       _     _   ____      _    ____ "
+    echo " | |   (_) __ _| |__ | |_|  _ \    / \  / ___|"
+    echo " | |   | |/ _\` | '_ \| __| |_) |  / _ \| |  _ "
+    echo " | |___| | (_| | | | | |_|  _ <  / ___ \ |_| |"
+    echo " |_____|_|\__, |_| |_|\__|_| \_\/_/   \_\____|"
+    echo "          |___/                              "
+    echo -e "${NC}"
+    echo "🚀 LightRAG Deployment Manager"
+    echo ""
+}
+
+# Check if Python deployment script exists
+if [ ! -f "deployment/deploy.py" ]; then
+    echo "❌ Deployment script not found: deployment/deploy.py"
+    exit 1
+fi
+
+# Check if deployment config exists
+if [ ! -f "deployment.yml" ]; then
+    echo "❌ Deployment config not found: deployment.yml"
+    exit 1
+fi
+
+# Show header for all commands except help
+if [ "$1" != "--help" ] && [ "$1" != "-h" ] && [ "$1" != "help" ]; then
+    print_header
+fi
+
+# Check if uv is available, fallback to python
+if command -v uv >/dev/null 2>&1; then
+    PYTHON_CMD="uv run python"
+else
+    PYTHON_CMD="python"
+fi
+
+# Run the Python deployment manager
+exec $PYTHON_CMD deployment/deploy.py "$@"
