@@ -1,9 +1,10 @@
-version: '3.8'
 
 services:
-  # PostgreSQL database with pgvector extension
+  # PostgreSQL database with pgvector and pgrouting extensions
   db:
-    image: pgvector/pgvector:pg16
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     container_name: lightrag-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -131,7 +132,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-lightrag}
-    command: ["python", "scripts/setup_db.py"]
+    command: ["python", "scripts/run_migrations.py"]
     networks:
       - lightrag-network
     restart: "no"
