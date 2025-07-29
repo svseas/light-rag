@@ -111,9 +111,9 @@ CREATE INDEX idx_relationships_target ON relationships(target_entity_id);
 CREATE INDEX idx_relationships_doc_id ON relationships(doc_id);
 CREATE INDEX idx_queries_created_at ON queries(created_at);
 
--- Create vector similarity indexes for pgvector
-CREATE INDEX idx_chunks_embedding ON chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-CREATE INDEX idx_entities_embedding ON entities USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+-- Note: Vector similarity indexes are not created for 3072-dimensional embeddings
+-- as ivfflat and hnsw indexes are limited to 2000 dimensions.
+-- Similarity queries will use sequential scans.
 
 -- Create pgrouting indexes
 CREATE INDEX idx_entity_edges_source ON entity_edges(source);
