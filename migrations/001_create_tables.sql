@@ -46,7 +46,7 @@ CREATE TABLE chunks (
     doc_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     chunk_index INTEGER NOT NULL,
-    embedding vector(1536), -- OpenAI embedding dimension
+    embedding vector(3072), -- Google Gemini embedding dimension
     tokens INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -59,7 +59,7 @@ CREATE TABLE entities (
     doc_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     chunk_id UUID REFERENCES chunks(id) ON DELETE SET NULL,
     properties_json JSONB,
-    embedding vector(1536), -- Entity embedding
+    embedding vector(3072), -- Google Gemini entity embedding
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

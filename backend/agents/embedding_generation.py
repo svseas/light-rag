@@ -16,7 +16,7 @@ class EmbeddingGenerationAgent:
         self.settings = get_settings()
         genai.configure(api_key=self.settings.google_api_key)
         self.model = self.settings.embedding_model
-        self.dimension = 768  # Will be updated after first API call
+        self.dimension = 3072  # Google Gemini embedding dimension
         self.max_batch_size = 100
         self.max_retries = 3
         

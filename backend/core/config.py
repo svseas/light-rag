@@ -89,14 +89,12 @@ class Settings(BaseSettings):
     embedding_similarity_threshold: float = 0.7
     embedding_search_limit: int = 50
     embedding_generation_timeout: int = 30
-    embedding_dimension: int = 768
+    embedding_dimension: int = 3072
     
     # Logging Configuration
     log_level: str = "INFO"
     log_file: str = "./logs/app.log"
     
-    # Railway Configuration
-    railway_token: str = ""
     
     class Config:
         env_file = ".env"
