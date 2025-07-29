@@ -13,7 +13,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ../migrations:/docker-entrypoint-initdb.d
     networks:
       - lightrag-network
     healthcheck:
@@ -42,7 +42,9 @@ services:
 
   # Main application
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
     container_name: lightrag-app
     depends_on:
       db:
@@ -117,7 +119,9 @@ services:
 
   # Database migration service (runs once on startup)
   migrate:
-    build: .
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
     container_name: lightrag-migrate
     depends_on:
       db:
